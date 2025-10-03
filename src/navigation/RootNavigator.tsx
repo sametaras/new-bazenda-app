@@ -77,7 +77,7 @@ function MainTabs() {
         options={{
           tabBarLabel: 'Keşfet',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name="basket-outline" size={size} color={color} />
           ),
         }}
       />
@@ -86,7 +86,7 @@ function MainTabs() {
         name="BAI"
         component={BAIStack}
         options={{
-          tabBarLabel: 'BAI Ara',
+          tabBarLabel: 'BAI',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="camera" size={size + 4} color={color} />
           ),
@@ -105,12 +105,12 @@ function MainTabs() {
       />
       
       <Tab.Screen
-        name="Profile"
+        name="Favorilerim"
         component={ProfileStack}
         options={{
-          tabBarLabel: 'Profil',
+          tabBarLabel: 'Favorilerim',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+            <Ionicons name="heart-circle-outline" size={size} color={color} />
           ),
         }}
       />

@@ -116,23 +116,23 @@ export default function BAICameraScreen() {
         facing={facing}
         ref={cameraRef}
       >
-        <SafeAreaView style={styles.header}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="close" size={28} color={colors.white} />
-          </TouchableOpacity>
-          
-          <Text style={styles.title}>BAI Arama</Text>
-          
-          <TouchableOpacity
-            style={styles.flipButton}
-            onPress={toggleCameraFacing}
-          >
-            <Ionicons name="camera-reverse" size={28} color={colors.white} />
-          </TouchableOpacity>
-        </SafeAreaView>
+<SafeAreaView style={styles.header}>
+  <TouchableOpacity
+    style={styles.closeButton}
+    onPress={() => navigation.goBack()}
+  >
+    <Ionicons name="close" size={28} color={colors.white} />
+  </TouchableOpacity>
+  
+  <Text style={styles.title}>BAI Arama</Text>
+  
+  <TouchableOpacity
+    style={styles.historyButton}
+    onPress={() => navigation.navigate('BAIHistory' as never)}
+  >
+    <Ionicons name="time" size={28} color={colors.white} />
+  </TouchableOpacity>
+</SafeAreaView>
 
         <View style={styles.guideContainer}>
           <View style={styles.guideFrame} />
@@ -288,5 +288,13 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     ...typography.button,
     color: colors.white,
+  },
+  historyButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

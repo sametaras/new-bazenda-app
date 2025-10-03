@@ -1,4 +1,4 @@
-// src/navigation/RootNavigator.tsx
+// src/navigation/RootNavigator.tsx - GÜNCEL TAM HAL
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,11 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/theme';
 
 import HomeScreen from '../screens/Home/HomeScreen';
+import SearchResultsScreen from '../screens/Search/SearchResultsScreen';
 import BAICameraScreen from '../screens/BAISearch/BAICameraScreen';
 import BAIResultsScreen from '../screens/BAISearch/BAIResultsScreen';
-import ProductDetailScreen from '../screens/ProductDetail/ProductDetailScreen';
-import CollectionsScreen from '../screens/Collections/CollectionsScreen';
-import ProfileScreen from '../screens/Profile/ProfileScreen';
+import BAIHistoryScreen from '../screens/BAISearch/BAIHistoryScreen';
+import FavoritesScreen from '../screens/Favorites/FavoritesScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -20,7 +20,7 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeMain" component={HomeScreen} />
-      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <Stack.Screen name="SearchResults" component={SearchResultsScreen} />
     </Stack.Navigator>
   );
 }
@@ -30,22 +30,7 @@ function BAIStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="BAICamera" component={BAICameraScreen} />
       <Stack.Screen name="BAIResults" component={BAIResultsScreen} />
-    </Stack.Navigator>
-  );
-}
-
-function CollectionsStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="CollectionsMain" component={CollectionsScreen} />
-    </Stack.Navigator>
-  );
-}
-
-function ProfileStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen name="BAIHistory" component={BAIHistoryScreen} />
     </Stack.Navigator>
   );
 }
@@ -94,23 +79,12 @@ function MainTabs() {
       />
       
       <Tab.Screen
-        name="Collections"
-        component={CollectionsStack}
-        options={{
-          tabBarLabel: 'Koleksiyonlar',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bookmark" size={size} color={color} />
-          ),
-        }}
-      />
-      
-      <Tab.Screen
         name="Favorilerim"
-        component={ProfileStack}
+        component={FavoritesScreen}
         options={{
           tabBarLabel: 'Favorilerim',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="heart-circle-outline" size={size} color={color} />
+            <Ionicons name="heart" size={size} color={color} />
           ),
         }}
       />

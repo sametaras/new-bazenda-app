@@ -1,33 +1,37 @@
 // src/types/index.ts
 
 export interface Product {
-    product_id: string;
-    product_info: number;
-    product_title: string;
-    image_link: string;
-    product_link: string;
-    app_product_link: string;
-    shop_id: number;
-    shop_name: string;
-    product_color?: string;
-    price: string;
-    raw_price: number;
-    history_count?: number;
-    last_updated?: string;
-    
-    // Sizes
-    all_sizes?: string;
-    all_sizes_simple?: string[];
-    size_count?: number;
-    
-    // Colors
-    all_colors?: string;
-    color_count?: number;
-    
-    // BAI specific
-    similarity_score?: number;
-    match_confidence?: number;
-  }
+  product_id: string;
+  product_info: number;
+  product_title: string;
+  image_link: string;
+  product_link: string; // Bazenda redirect linki
+  app_product_link: string; // Direkt mağaza linki
+  original_link: string; // Orijinal link
+  
+  last_updated?: string;
+  history_count?: number;
+  
+  shop_id: number;
+  shop_name: string;
+  product_color?: string;
+  
+  price: string;
+  raw_price: number;
+  
+  // Sizes
+  all_sizes?: string;
+  all_sizes_simple?: string[];
+  size_count?: number;
+  
+  // Colors
+  all_colors?: string;
+  color_count?: number;
+  
+  // BAI specific (optional)
+  similarity_score?: number;
+  match_confidence?: number;
+}
   
   export interface BAISearchRequest {
     search_image: Blob | File;

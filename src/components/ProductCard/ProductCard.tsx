@@ -1,6 +1,6 @@
 // src/components/ProductCard/ProductCard.tsx - PRODUCTION READY
-import React, { useState } from 'react';
-import { Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Linking, Alert, Modal, ActivityIndicator } from 'react-native';
 import {
   View,
   Text,
@@ -12,9 +12,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography, shadows } from '../../theme/theme';
 import { Product } from '../../types';
 import PriceHistoryModal from '../PriceHistoryModal/PriceHistoryModal';
+import { useBaiStore } from '../../store/baiStore';
+
+const LOADING_MESSAGES = [
+  { title: 'BAI Analiz Ediyor...', subtitle: 'Görsel özellikler çıkarılıyor' },
+  { title: 'En Benzer Ürünler Aranıyor...', subtitle: 'Binlerce ürün taranıyor' },
+  { title: 'Sonuçlar Hazırlanıyor...', subtitle: 'En iyi eşleşmeler getiriliyor' },
+];
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.m * 3) / 2;
@@ -22,26 +30,68 @@ const CARD_WIDTH = (SCREEN_WIDTH - spacing.m * 3) / 2;
 interface ProductCardProps {
   product: Product;
   onFavoritePress: () => void;
-  onBAIPress: () => void;
   isFavorite: boolean;
 }
 
 export default function ProductCard({
   product,
   onFavoritePress,
-  onBAIPress,
   isFavorite,
 }: ProductCardProps) {
+  const navigation = useNavigation();
+  const { performProductSearch, isSearching } = useBaiStore();
   const [showPriceHistory, setShowPriceHistory] = useState(false);
+  const [showBAILoading, setShowBAILoading] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  
+  // Loading mesajlarını döndür
+  useEffect(() => {
+    if (showBAILoading) {
+      const interval = setInterval(() => {
+        setLoadingMessageIndex((prev) => 
+          prev < LOADING_MESSAGES.length - 1 ? prev + 1 : prev
+        );
+      }, 1500);
+      return () => clearInterval(interval);
+    } else {
+      setLoadingMessageIndex(0);
+    }
+  }, [showBAILoading]);
   
   const handleFavoritePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onFavoritePress();
   };
 
-  const handleBAIPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onBAIPress();
+  const handleBAIPress = async () => {
+    if (isSearching || showBAILoading) return;
+    
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Loading modal'ı aç
+      setShowBAILoading(true);
+      
+      console.log('BAI arama başlatılıyor, product_id:', product.product_id);
+      
+      // Arama yap
+      await performProductSearch(product.product_id, product.product_title);
+      
+      console.log('BAI arama tamamlandı, navigation yapılıyor');
+      
+      // Loading modal'ı kapat
+      setShowBAILoading(false);
+      
+      // Şimdi sonuç sayfasına git
+      (navigation as any).navigate('BAI', {
+        screen: 'BAIResults'
+      });
+      
+    } catch (error) {
+      console.error('BAI arama hatası:', error);
+      setShowBAILoading(false);
+      Alert.alert('Hata', 'Benzer ürün araması başarısız oldu');
+    }
   };
 
   const handlePriceHistoryPress = () => {
@@ -64,6 +114,13 @@ export default function ProductCard({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     handleProductPress();
   };
+
+  // İndirim miktarını kontrol et
+  const hasDiscount = product.discount_amount && 
+    product.discount_amount !== "0" && 
+    product.discount_amount !== "0.00" &&
+    product.last_price &&
+    parseFloat(product.discount_amount.replace(/,/g, '')) > 0;
 
   return (
     <>
@@ -96,18 +153,30 @@ export default function ProductCard({
             />
           </TouchableOpacity>
 
-          {/* BAI Mini Button - Bottom Right with Gradient */}
+          {/* Discount Badge - Top Right */}
+          {hasDiscount && (
+            <View style={styles.discountBadge}>
+              <Ionicons name="arrow-down" size={8} color={colors.white} />
+              <Text style={styles.discountText} numberOfLines={1}>
+                {product.discount_amount} ₺
+              </Text>
+            </View>
+          )}
+
+          {/* BAI Mini Button - Bottom Right with Rainbow Gradient */}
           <TouchableOpacity
             style={styles.baiMiniButton}
             onPress={handleBAIPress}
+            disabled={showBAILoading}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <LinearGradient
-              colors={[colors.primary, colors.primaryLight]}
+              colors={['#FF6B6B', '#4ECDC4', '#45B7D1']}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.baiMiniGradient}
+              end={{ x: 1, y: 1 }}
+              style={[styles.baiMiniGradient, showBAILoading && styles.baiMiniGradientDisabled]}
             >
+              <Ionicons name="camera" size={12} color={colors.white} />
               <Text style={styles.baiMiniText}>BAI</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -134,7 +203,14 @@ export default function ProductCard({
 
           {/* Price */}
           <View style={styles.priceRow}>
-            <Text style={styles.price}>{product.price} ₺</Text>
+            {hasDiscount ? (
+              <>
+                <Text style={styles.originalPrice}>{product.last_price} ₺</Text>
+                <Text style={styles.discountedPrice}>{product.price} ₺</Text>
+              </>
+            ) : (
+              <Text style={styles.price}>{product.price} ₺</Text>
+            )}
           </View>
 
           {/* Bottom Actions */}
@@ -180,6 +256,39 @@ export default function ProductCard({
         productTitle={product.product_title}
         onClose={() => setShowPriceHistory(false)}
       />
+
+      {/* BAI Loading Modal */}
+      <Modal
+        visible={showBAILoading}
+        transparent
+        animationType="fade"
+      >
+        <View style={styles.baiLoadingModal}>
+          <View style={styles.baiLoadingContent}>
+            <View style={styles.baiLoadingIconContainer}>
+              <Ionicons name="sparkles" size={48} color={colors.primary} />
+            </View>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.baiLoadingTitle}>
+              {LOADING_MESSAGES[loadingMessageIndex].title}
+            </Text>
+            <Text style={styles.baiLoadingSubtitle}>
+              {LOADING_MESSAGES[loadingMessageIndex].subtitle}
+            </Text>
+            <View style={styles.baiLoadingDots}>
+              {LOADING_MESSAGES.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.baiLoadingDot,
+                    index === loadingMessageIndex && styles.baiLoadingDotActive
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -220,26 +329,48 @@ const styles = StyleSheet.create({
   favoriteButtonActive: {
     backgroundColor: colors.error,
   },
+  discountBadge: {
+    position: 'absolute',
+    top: spacing.s,
+    right: spacing.s,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.success,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 5,
+    gap: 2,
+    zIndex: 10,
+    maxWidth: 70,
+  },
+  discountText: {
+    fontSize: 8,
+    color: colors.white,
+    fontWeight: '700',
+  },
   baiMiniButton: {
     position: 'absolute',
     bottom: spacing.s,
     right: spacing.s,
     zIndex: 10,
-    borderRadius: 7,
+    borderRadius: 8,
     overflow: 'hidden',
-    ...shadows.small,
+    ...shadows.medium,
   },
   baiMiniGradient: {
-    paddingHorizontal: spacing.s,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.s + 2,
+    paddingVertical: 5,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 3,
+  },
+  baiMiniGradientDisabled: {
+    opacity: 0.5,
   },
   baiMiniText: {
-    ...typography.small,
     color: colors.white,
     fontWeight: '700',
-    fontSize: 9,
+    fontSize: 10,
   },
   infoContainer: {
     padding: spacing.s,
@@ -279,11 +410,25 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.xs,
+    gap: spacing.xs,
   },
   price: {
     fontSize: 14,
     color: colors.primary,
+    fontWeight: '700',
+  },
+  originalPrice: {
+    fontSize: 11,
+    color: colors.gray500,
+    fontWeight: '500',
+    textDecorationLine: 'line-through',
+  },
+  discountedPrice: {
+    fontSize: 14,
+    color: colors.success,
     fontWeight: '700',
   },
   bottomActions: {
@@ -321,5 +466,49 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.gray600,
     marginLeft: 2,
+  },
+  baiLoadingModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  baiLoadingContent: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    padding: spacing.xl,
+    alignItems: 'center',
+    width: '85%',
+    maxWidth: 340,
+  },
+  baiLoadingIconContainer: {
+    marginBottom: spacing.m,
+  },
+  baiLoadingTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.black,
+    marginTop: spacing.l,
+    textAlign: 'center',
+  },
+  baiLoadingSubtitle: {
+    fontSize: 13,
+    color: colors.gray600,
+    marginTop: spacing.s,
+    textAlign: 'center',
+  },
+  baiLoadingDots: {
+    flexDirection: 'row',
+    marginTop: spacing.l,
+    gap: spacing.s,
+  },
+  baiLoadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.gray300,
+  },
+  baiLoadingDotActive: {
+    backgroundColor: colors.primary,
   },
 });

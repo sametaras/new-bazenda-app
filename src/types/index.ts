@@ -17,7 +17,8 @@ export interface Product {
   shop_name: string;
   product_color?: string;
   
-  price: string;
+  price: string;           // Şu anki fiyat (indirimli)
+  last_price?: string;     // Eski fiyat (indirim öncesi)
   raw_price: number;
   
   // Sizes

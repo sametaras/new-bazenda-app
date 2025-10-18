@@ -173,7 +173,6 @@ export default function FavoritesScreen() {
               <ProductCard
                 product={item}
                 onFavoritePress={() => toggleFavorite(item.product_id)}
-                onBAIPress={() => {}}
                 isFavorite={true}
               />
             </View>

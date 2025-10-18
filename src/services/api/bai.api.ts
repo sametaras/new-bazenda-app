@@ -1,4 +1,4 @@
-// src/services/api/bai.service.ts - PRODUCTION READY
+// src/services/api/bai.api.ts - PRODUCTION READY
 import * as ImageManipulator from 'expo-image-manipulator';
 import { BAISearchRequest, BAISearchResponse, SearchFilters, Product } from '../../types';
 
@@ -70,6 +70,106 @@ export class BAIService {
         search_type: 'visual',
         error: error instanceof Error ? error.message : 'Bilinmeyen hata',
         message: 'Arama sırasında bir hata oluştu. Lütfen tekrar deneyin.',
+      };
+    }
+  }
+
+  /**
+   * Ürün ID'sine göre BAI araması yap
+   */
+  static async searchByProductId(
+    productId: string,
+    filters?: SearchFilters
+  ): Promise<BAISearchResponse> {
+    try {
+      // 1. Önce raw image'ı al
+      const rawImageResponse = await fetch(`${API_BASE_URL}/get_raw_image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `product_id=${productId}`,
+      });
+
+      const rawImageData = await rawImageResponse.json();
+      
+      if (!rawImageData.status || !rawImageData.raw_data) {
+        throw new Error('Ürün görseli alınamadı');
+      }
+
+      console.log('Raw image alındı, boyut:', rawImageData.size);
+
+      // 2. Base64'ü direkt FormData'ya ekle (React Native için)
+      const formData = new FormData();
+      
+      // Base64 string'i data URI formatında gönder
+      const base64Image = rawImageData.raw_data; // zaten "data:image/jpeg;base64,..." formatında
+      
+      // Base64'den blob oluştur
+      const byteString = atob(base64Image.split(',')[1]);
+      const mimeString = base64Image.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      
+      // React Native için file object oluştur
+      const file = {
+        uri: base64Image,
+        type: mimeString,
+        name: 'search.jpg',
+      };
+      
+      formData.append('search_image', file as any);
+      formData.append('search_type', 'visual');
+      formData.append('page', '1');
+      formData.append('sort_by', '0');
+      formData.append('price_min', '');
+      formData.append('price_max', '');
+
+      console.log('Form data hazırlandı, API isteği gönderiliyor...');
+
+      const searchResponse = await fetch(`${API_BASE_URL}/get_results`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!searchResponse.ok) {
+        throw new Error(`HTTP ${searchResponse.status}: ${searchResponse.statusText}`);
+      }
+
+      const data = await searchResponse.json();
+
+      console.log('API yanıtı alındı, sonuç sayısı:', data.results?.length || 0);
+
+      if (!data.success) {
+        throw new Error(data.message || 'Arama başarısız');
+      }
+
+      return {
+        success: true,
+        results: data.results || [],
+        total_count: data.total_count || 0,
+        current_count: data.current_count || 0,
+        search_type: 'visual',
+        uploaded_image: data.uploaded_image,
+        search_metadata: data.search_metadata,
+      };
+    } catch (error) {
+      console.error('BAI Product Search Error:', error);
+      
+      return {
+        success: false,
+        results: [],
+        total_count: 0,
+        current_count: 0,
+        search_type: 'visual',
+        error: error instanceof Error ? error.message : 'Bilinmeyen hata',
+        message: 'Benzer ürün araması sırasında bir hata oluştu.',
       };
     }
   }

@@ -14,6 +14,7 @@ interface BAIStore {
   
   // Actions
   performSearch: (imageUri: string, filters?: SearchFilters) => Promise<void>;
+  performProductSearch: (productId: string, productTitle: string, filters?: SearchFilters) => Promise<void>;
   addToHistory: (search: SearchHistory) => void;
   clearHistory: () => void;
   removeFromHistory: (id: string) => void;
@@ -30,7 +31,7 @@ export const useBaiStore = create<BAIStore>()(
       isSearching: false,
       searchError: null,
       
-      // Arama yap
+      // Görsel ile arama yap
       performSearch: async (imageUri: string, filters?: SearchFilters) => {
         set({ isSearching: true, searchError: null });
         
@@ -58,6 +59,50 @@ export const useBaiStore = create<BAIStore>()(
             results: filteredResults,
             timestamp: Date.now(),
             filters,
+            isBaiSearch: true,
+          };
+          
+          get().addToHistory(searchRecord);
+          set({ 
+            currentSearch: searchRecord,
+            isSearching: false 
+          });
+          
+        } catch (error) {
+          const errorMessage = error instanceof Error 
+            ? error.message 
+            : 'Bilinmeyen bir hata oluştu';
+          
+          set({ 
+            isSearching: false,
+            searchError: errorMessage 
+          });
+          
+          throw error;
+        }
+      },
+
+      // Ürün ID'si ile arama yap
+      performProductSearch: async (productId: string, productTitle: string, filters?: SearchFilters) => {
+        set({ isSearching: true, searchError: null });
+        
+        try {
+          // API'ye ürün bazlı arama isteği gönder
+          const response = await BAIService.searchByProductId(productId, filters);
+          
+          if (!response.success) {
+            throw new Error(response.message || 'Arama başarısız oldu');
+          }
+          
+          // Arama geçmişine ekle
+          const searchRecord: SearchHistory = {
+            id: Date.now().toString(),
+            imageUri: '', // Ürün aramasında URI yok
+            results: response.results,
+            timestamp: Date.now(),
+            filters,
+            productId,
+            isBaiSearch: true,
           };
           
           get().addToHistory(searchRecord);
@@ -108,7 +153,13 @@ export const useBaiStore = create<BAIStore>()(
       retrySearch: async (historyId: string) => {
         const search = get().searchHistory.find(s => s.id === historyId);
         if (search) {
-          await get().performSearch(search.imageUri, search.filters);
+          if (search.productId) {
+            // Ürün bazlı arama
+            await get().performProductSearch(search.productId, '', search.filters);
+          } else if (search.imageUri) {
+            // Görsel bazlı arama
+            await get().performSearch(search.imageUri, search.filters);
+          }
         }
       },
     }),

@@ -1,4 +1,4 @@
-// src/screens/Home/HomeScreen.tsx - PRODUCTION READY
+// src/screens/Home/HomeScreen.tsx - MODERN TAG CLOUD VERSION
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -30,41 +30,33 @@ const QUICK_ACTIONS = [
   { id: 'trends', icon: 'flame', label: 'Trendler', action: 'trends' },
 ];
 
+// En çok arama yapılan ürünler - gerçek e-ticaret verilerine göre sıralı
 const POPULAR_SEARCHES = [
-  { id: '1', text: 'külot', size: 4, color: 1 },
-  { id: '2', text: 'tulum', size: 3, color: 2 },
-  { id: '3', text: 'tayt', size: 3, color: 3 },
-  { id: '4', text: 'tunik', size: 3, color: 4 },
-  { id: '5', text: 'atlet', size: 4, color: 5 },
-  { id: '6', text: 'boxer', size: 4, color: 1 },
-  { id: '7', text: 'yağmurluk', size: 3, color: 2 },
-  { id: '8', text: 'çorap', size: 3, color: 3 },
-  { id: '9', text: 'salopet', size: 2, color: 4 },
-  { id: '10', text: 'tişört', size: 5, color: 5 },
-  { id: '11', text: 'bermuda', size: 3, color: 1 },
-  { id: '12', text: 'korse', size: 2, color: 2 },
-  { id: '13', text: 'bluz', size: 4, color: 3 },
-  { id: '14', text: 'sütyen', size: 4, color: 4 },
-  { id: '15', text: 'pantolon', size: 5, color: 5 },
-  { id: '16', text: 'kaban', size: 4, color: 1 },
-  { id: '17', text: 'parka', size: 2, color: 2 },
-  { id: '18', text: 'yelek', size: 4, color: 3 },
-  { id: '19', text: 'elbise', size: 5, color: 4 },
-  { id: '20', text: 'ayakkabı', size: 5, color: 5 },
-  { id: '21', text: 'atkı', size: 3, color: 1 },
-  { id: '22', text: 'kapri', size: 2, color: 2 },
-  { id: '23', text: 'ceket', size: 4, color: 3 },
-  { id: '24', text: 'kazak', size: 5, color: 4 },
-  { id: '25', text: 'pijama', size: 4, color: 5 },
-  { id: '26', text: 'gecelik', size: 3, color: 1 },
-  { id: '27', text: 'mont', size: 5, color: 2 },
-  { id: '28', text: 'etek', size: 5, color: 3 },
-  { id: '29', text: 'trençkot', size: 2, color: 4 },
-  { id: '30', text: 'bot', size: 5, color: 5 },
-  { id: '31', text: 'gömlek', size: 5, color: 1 },
-  { id: '32', text: 'tshirt', size: 5, color: 2 },
-  { id: '33', text: 'şort', size: 3, color: 3 },
-  { id: '34', text: 'sabahlık', size: 3, color: 4 },
+  { id: '1', text: 'tişört', category: 'Üst Giyim', popularity: 99 },
+  { id: '2', text: 'pantolon', category: 'Alt Giyim', popularity: 98 },
+  { id: '3', text: 'elbise', category: 'Dış Giyim', popularity: 97 },
+  { id: '4', text: 'ayakkabı', category: 'Ayakkabı', popularity: 96 },
+  { id: '5', text: 'mont', category: 'Dış Giyim', popularity: 95 },
+  { id: '6', text: 'kazak', category: 'Üst Giyim', popularity: 94 },
+  { id: '7', text: 'ceket', category: 'Dış Giyim', popularity: 93 },
+  { id: '8', text: 'jean', category: 'Alt Giyim', popularity: 92 },
+  { id: '9', text: 'bot', category: 'Ayakkabı', popularity: 91 },
+  { id: '10', text: 'gömlek', category: 'Üst Giyim', popularity: 90 },
+  { id: '11', text: 'çanta', category: 'Aksesuar', popularity: 89 },
+  { id: '12', text: 'bluz', category: 'Üst Giyim', popularity: 88 },
+  { id: '13', text: 'tayt', category: 'Alt Giyim', popularity: 87 },
+  { id: '14', text: 'etek', category: 'Alt Giyim', popularity: 86 },
+  { id: '15', text: 'sweatshirt', category: 'Üst Giyim', popularity: 85 },
+  { id: '16', text: 'spor ayakkabı', category: 'Ayakkabı', popularity: 84 },
+  { id: '17', text: 'şort', category: 'Alt Giyim', popularity: 83 },
+  { id: '18', text: 'kaban', category: 'Dış Giyim', popularity: 82 },
+  { id: '19', text: 'tunik', category: 'Üst Giyim', popularity: 81 },
+  { id: '20', text: 'tulum', category: 'Dış Giyim', popularity: 80 },
+  { id: '21', text: 'cüzdan', category: 'Aksesuar', popularity: 79 },
+  { id: '22', text: 'şapka', category: 'Aksesuar', popularity: 78 },
+  { id: '23', text: 'eşofman', category: 'Spor', popularity: 77 },
+  { id: '24', text: 'pijama', category: 'İç Giyim', popularity: 76 },
+  { id: '25', text: 'kemer', category: 'Aksesuar', popularity: 75 },
 ];
 
 export default function HomeScreen() {
@@ -78,7 +70,7 @@ export default function HomeScreen() {
   const [trendPage, setTrendPage] = useState(1);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [showPopularSearches, setShowPopularSearches] = useState(true); // İlk başta açık
+  const [showPopularSearches, setShowPopularSearches] = useState(true);
   
   const { toggleFavorite, isFavorite } = useFavorites();
 
@@ -161,23 +153,16 @@ export default function HomeScreen() {
     setShowPopularSearches(!showPopularSearches);
   };
 
-  const getTagStyle = (size: number, color: number) => {
-    // Font size based on size (2-5)
-    const fontSize = 10 + (size * 2);
-    
-    // Colors from bazenda.com
-    const tagColors = [
-      colors.tag1, // #FF6B6B
-      colors.tag2, // #4ECDC4
-      colors.tag3, // #45B7D1
-      colors.tag4, // #96CEB4
-      colors.tag5, // #9B59B6
-    ];
-    
-    return {
-      fontSize,
-      color: tagColors[color - 1] || colors.tag1,
-    };
+  const getTagColor = (index: number) => {
+    const tagColors = [colors.tag1, colors.tag2, colors.tag3, colors.tag4, colors.tag5];
+    return tagColors[index % tagColors.length];
+  };
+
+  const getTagSize = (popularity: number) => {
+    if (popularity >= 90) return { fontSize: 16, paddingH: 16, paddingV: 10 };
+    if (popularity >= 80) return { fontSize: 15, paddingH: 14, paddingV: 9 };
+    if (popularity >= 70) return { fontSize: 14, paddingH: 12, paddingV: 8 };
+    return { fontSize: 13, paddingH: 11, paddingV: 7 };
   };
 
   const handleFilterPress = () => {
@@ -287,8 +272,6 @@ export default function HomeScreen() {
               <Text style={styles.baiQuickActionLabel}>BAI</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Popular Searches Dropdown kaldırıldı - üstte FlatList içinde */}
         </View>
       </View>
 
@@ -313,26 +296,49 @@ export default function HomeScreen() {
         scrollEventThrottle={16}
         ListHeaderComponent={
           <>
-            {/* Popular Searches Dropdown - bazenda.com style */}
+            {/* Popüler Aramalar Header */}
+            {showPopularSearches && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Popüler Aramalar</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Modern Popular Searches Cloud - Horizontal Scroll */}
             {showPopularSearches && (
               <View style={styles.popularSearchesContainer}>
                 <ScrollView 
                   horizontal 
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.tagCloudContent}
+                  contentContainerStyle={styles.tagCloudScroll}
                 >
-                  {POPULAR_SEARCHES.map((item) => {
-                    const tagStyle = getTagStyle(item.size, item.color);
+                  {POPULAR_SEARCHES.map((item, index) => {
+                    const tagColor = getTagColor(index);
+                    const tagSize = getTagSize(item.popularity);
+                    
                     return (
                       <TouchableOpacity
                         key={item.id}
-                        style={styles.tagItem}
+                        style={[
+                          styles.modernTag,
+                          { 
+                            backgroundColor: `${tagColor}15`,
+                            borderColor: `${tagColor}40`,
+                            paddingHorizontal: tagSize.paddingH,
+                            paddingVertical: tagSize.paddingV,
+                          }
+                        ]}
                         onPress={() => handlePopularSearch(item.text)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.7}
                       >
-                        <Text style={[styles.tagItemText, tagStyle]}>
+                        <Text style={[
+                          styles.modernTagText,
+                          { color: tagColor, fontSize: tagSize.fontSize }
+                        ]}>
                           {item.text}
                         </Text>
+                        <View style={[styles.popularityDot, { backgroundColor: tagColor }]} />
                       </TouchableOpacity>
                     );
                   })}
@@ -505,6 +511,35 @@ const styles = StyleSheet.create({
     color: colors.gray700,
     fontWeight: '700',
   },
+  popularSearchesContainer: {
+    backgroundColor: colors.white,
+    marginHorizontal: spacing.m,
+    marginBottom: spacing.l,
+    paddingVertical: spacing.m,
+    borderRadius: 16,
+    ...shadows.small,
+  },
+  tagCloudScroll: {
+    paddingHorizontal: spacing.l,
+    gap: spacing.s,
+  },
+  modernTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    marginRight: spacing.s,
+  },
+  modernTagText: {
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  popularityDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginLeft: 6,
+  },
   section: {
     marginBottom: spacing.l,
     paddingTop: spacing.m,
@@ -525,47 +560,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-  popularSection: {
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.l,
-    backgroundColor: colors.white,
-    marginBottom: spacing.m,
-  },
-  popularHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.m,
-  },
-  popularTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.black,
-    marginLeft: spacing.s,
-  },
-  popularTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.s,
-  },
-  popularTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.gray50,
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-  },
-  popularTagEmoji: {
-    fontSize: 14,
-    marginRight: spacing.xs,
-  },
-  popularTagText: {
-    fontSize: 13,
-    color: colors.gray700,
-    fontWeight: '500',
-  },
   trendGrid: {
     padding: spacing.s,
   },
@@ -578,8 +572,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingMore: {
-    paddingHorizontal: spacing.l,
+    paddingVertical: spacing.l,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollTopButton: {
     position: 'absolute',

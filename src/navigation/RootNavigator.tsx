@@ -1,10 +1,17 @@
-// src/navigation/RootNavigator.tsx - GÜNCEL TAM HAL
+// src/navigation/RootNavigator.tsx - BAI TAB DİREKT KAMERA AÇAR
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/theme';
+
+// Theme'den sadece colors import et
+const colors = {
+  primary: '#f67310',
+  gray500: '#ADB5BD',
+  gray200: '#E9ECEF',
+  white: '#FFFFFF',
+};
 
 import HomeScreen from '../screens/Home/HomeScreen';
 import SearchResultsScreen from '../screens/Search/SearchResultsScreen';
@@ -27,7 +34,10 @@ function HomeStack() {
 
 function BAIStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ headerShown: false }}
+      initialRouteName="BAICamera"
+    >
       <Stack.Screen name="BAICamera" component={BAICameraScreen} />
       <Stack.Screen name="BAIResults" component={BAIResultsScreen} />
       <Stack.Screen name="BAIHistory" component={BAIHistoryScreen} />
@@ -55,6 +65,17 @@ function MainTabs() {
           fontWeight: '500',
         },
       }}
+      screenListeners={({ navigation, route }) => ({
+        tabPress: (e) => {
+          // BAI tab'ına basıldığında her zaman kamera ekranına git
+          if (route.name === 'BAI') {
+            e.preventDefault();
+            navigation.navigate('BAI', {
+              screen: 'BAICamera',
+            });
+          }
+        },
+      })}
     >
       <Tab.Screen
         name="Home"

@@ -1,4 +1,4 @@
-// src/screens/Home/HomeScreen.tsx - STICKY SEARCH HEADER
+// src/screens/Home/HomeScreen.tsx - MODERN INSTAGRAM-STYLE HEADER
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Image,
   Animated,
+  Modal,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,39 +27,27 @@ import AnalyticsService from '../../services/analytics/analytics.service';
 import FilterModal from '../../components/FilterModal/FilterModal';
 
 const QUICK_ACTIONS = [
-  { id: 'favorites', icon: 'heart', label: 'Favoriler', route: 'Favorilerim', color: colors.error },
+  { id: 'popular', icon: 'star', label: 'Popüler', action: 'popular', color: colors.warning },
   { id: 'discover', icon: 'compass', label: 'Keşfet', action: 'discover', color: colors.info },
-  { id: 'filter', icon: 'options', label: 'Filtre', action: 'filter', color: colors.success },
-  { id: 'bai', icon: 'camera', label: 'BAI', action: 'bai', color: colors.primary },
+  { id: 'radar', icon: 'radio-outline', label: 'Radar', action: 'radar', color: colors.secondary },
 ];
 
-// En çok arama yapılan ürünler
 const POPULAR_SEARCHES = [
-  { id: '1', text: 'tişört', category: 'Üst Giyim', popularity: 99 },
-  { id: '2', text: 'pantolon', category: 'Alt Giyim', popularity: 98 },
-  { id: '3', text: 'elbise', category: 'Dış Giyim', popularity: 97 },
-  { id: '4', text: 'ayakkabı', category: 'Ayakkabı', popularity: 96 },
-  { id: '5', text: 'mont', category: 'Dış Giyim', popularity: 95 },
-  { id: '6', text: 'kazak', category: 'Üst Giyim', popularity: 94 },
-  { id: '7', text: 'ceket', category: 'Dış Giyim', popularity: 93 },
-  { id: '8', text: 'jean', category: 'Alt Giyim', popularity: 92 },
-  { id: '9', text: 'bot', category: 'Ayakkabı', popularity: 91 },
-  { id: '10', text: 'gömlek', category: 'Üst Giyim', popularity: 90 },
-  { id: '11', text: 'çanta', category: 'Aksesuar', popularity: 89 },
-  { id: '12', text: 'bluz', category: 'Üst Giyim', popularity: 88 },
-  { id: '13', text: 'tayt', category: 'Alt Giyim', popularity: 87 },
-  { id: '14', text: 'etek', category: 'Alt Giyim', popularity: 86 },
-  { id: '15', text: 'sweatshirt', category: 'Üst Giyim', popularity: 85 },
-  { id: '16', text: 'spor ayakkabı', category: 'Ayakkabı', popularity: 84 },
-  { id: '17', text: 'şort', category: 'Alt Giyim', popularity: 83 },
-  { id: '18', text: 'kaban', category: 'Dış Giyim', popularity: 82 },
-  { id: '19', text: 'tunik', category: 'Üst Giyim', popularity: 81 },
-  { id: '20', text: 'tulum', category: 'Dış Giyim', popularity: 80 },
-  { id: '21', text: 'cüzdan', category: 'Aksesuar', popularity: 79 },
-  { id: '22', text: 'şapka', category: 'Aksesuar', popularity: 78 },
-  { id: '23', text: 'eşofman', category: 'Spor', popularity: 77 },
-  { id: '24', text: 'pijama', category: 'İç Giyim', popularity: 76 },
-  { id: '25', text: 'kemer', category: 'Aksesuar', popularity: 75 },
+  { id: '1', text: 'tişört', popularity: 99 },
+  { id: '2', text: 'pantolon', popularity: 98 },
+  { id: '3', text: 'elbise', popularity: 97 },
+  { id: '4', text: 'ayakkabı', popularity: 96 },
+  { id: '5', text: 'mont', popularity: 95 },
+  { id: '6', text: 'kazak', popularity: 94 },
+  { id: '7', text: 'ceket', popularity: 93 },
+  { id: '8', text: 'jean', popularity: 92 },
+  { id: '9', text: 'bot', popularity: 91 },
+  { id: '10', text: 'gömlek', popularity: 90 },
+  { id: '11', text: 'çanta', popularity: 89 },
+  { id: '12', text: 'bluz', popularity: 88 },
+  { id: '13', text: 'tayt', popularity: 87 },
+  { id: '14', text: 'etek', popularity: 86 },
+  { id: '15', text: 'sweatshirt', popularity: 85 },
 ];
 
 export default function HomeScreen() {
@@ -71,7 +61,8 @@ export default function HomeScreen() {
   const [trendPage, setTrendPage] = useState(1);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [showPopularSearches, setShowPopularSearches] = useState(true);
+  const [showPopularSearches, setShowPopularSearches] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   
   const { toggleFavorite, isFavorite } = useFavorites();
 
@@ -98,7 +89,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      setShowPopularSearches(true);
+      setShowPopularSearches(false);
     }, [])
   );
 
@@ -116,7 +107,9 @@ export default function HomeScreen() {
   const handleQuickAction = (actionId: string, route?: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    if (actionId === 'bai') {
+    if (actionId === 'popular') {
+      setShowPopularSearches(true);
+    } else if (actionId === 'bai') {
       AnalyticsService.logEvent('bai_button_click');
       navigation.navigate('BAI' as never);
     } else if (route) {
@@ -126,14 +119,18 @@ export default function HomeScreen() {
         query: 'trends',
         title: 'Keşfet'
       } as never);
-    } else if (actionId === 'filter') {
-      setShowFilters(true);
+    } else if (actionId === 'radar') {
+      navigation.navigate('SearchResults', { 
+        query: 'radar',
+        title: 'Radar Ürünler'
+      } as never);
     }
   };
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
       AnalyticsService.logSearch(searchQuery.trim(), 'text');
+      setShowPopularSearches(false);
       navigation.navigate('SearchResults', { 
         query: searchQuery.trim()
       } as never);
@@ -143,36 +140,33 @@ export default function HomeScreen() {
   const handlePopularSearch = (searchText: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     AnalyticsService.logSearch(searchText, 'text');
+    setSearchQuery(searchText);
     setShowPopularSearches(false);
     navigation.navigate('SearchResults', { 
       query: searchText
     } as never);
   };
 
-  const togglePopularSearches = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowPopularSearches(!showPopularSearches);
+  const handleMenuLink = async (url: string) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+        setShowMenu(false);
+      }
+    } catch (error) {
+      console.error('Link açma hatası:', error);
+    }
   };
 
-  const getTagColor = (index: number) => {
-    const tagColors = [
-      { bg: colors.primary + '15', text: colors.primary, border: colors.primary + '40' },
-      { bg: colors.secondary + '15', text: colors.secondary, border: colors.secondary + '40' },
-      { bg: colors.success + '15', text: colors.success, border: colors.success + '40' },
-      { bg: colors.info + '15', text: colors.info, border: colors.info + '40' },
-      { bg: '#FF6B6B15', text: '#FF6B6B', border: '#FF6B6B40' },
-      { bg: '#4ECDC415', text: '#4ECDC4', border: '#4ECDC440' },
-      { bg: '#45B7D115', text: '#45B7D1', border: '#45B7D140' },
-      { bg: '#96CEB415', text: '#96CEB4', border: '#96CEB440' },
-    ];
-    return tagColors[index % tagColors.length];
-  };
-
-  const getTagSize = (popularity: number) => {
-    if (popularity >= 90) return { fontSize: 14, paddingH: 14, paddingV: 8 };
-    if (popularity >= 80) return { fontSize: 13, paddingH: 12, paddingV: 7 };
-    if (popularity >= 70) return { fontSize: 12, paddingH: 11, paddingV: 6 };
-    return { fontSize: 11, paddingH: 10, paddingV: 6 };
+  const handleBAIPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    AnalyticsService.logEvent('bai_button_click');
+    // Direkt kamera ekranına git
+    (navigation as any).navigate('BAI', {
+      screen: 'BAICamera'
+    });
   };
 
   const handleApplyFilters = (appliedFilters: any) => {
@@ -193,29 +187,48 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Sticky Header - Always Visible */}
-      <View style={styles.stickyHeader}>
-        {/* Logo - Small, Left Corner */}
+      {/* MODERN INSTAGRAM-STYLE HEADER */}
+      <View style={styles.modernHeader}>
+        {/* Top Bar: Logo + Icons */}
         <View style={styles.topBar}>
-          <Image
-            source={require('../../../assets/bazenda-logo.png')}
-            style={styles.smallLogo}
-            resizeMode="contain"
-          />
-          <Text style={styles.tagline}>Akıllı Alışveriş Asistanı</Text>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../../assets/bazenda-logo.png')}
+              style={styles.logo}
+            />
+          </View>
+
+          <View style={styles.headerIcons}>
+            {/* Menu */}
+            <TouchableOpacity 
+              style={styles.headerIcon}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowMenu(!showMenu);
+              }}
+            >
+              <Ionicons name="menu" size={22} color={colors.black} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Search Bar - Always Visible */}
-        <View style={styles.searchBarContainer}>
-          <View style={styles.searchBar}>
+        {/* Search Row with Actions */}
+        <View style={styles.searchRow}>
+          {/* Main Search Bar */}
+          <TouchableOpacity 
+            style={styles.mainSearchBar}
+            onPress={() => setShowPopularSearches(true)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="search" size={18} color={colors.primary} />
             <TextInput
-              style={styles.searchInput}
-              placeholder="Ne arıyorsunuz? Örn: pantolon, ayakkabı..."
+              style={styles.mainSearchInput}
+              placeholder="Ne arıyorsunuz?"
               placeholderTextColor={colors.gray500}
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
+              onFocus={() => setShowPopularSearches(true)}
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
@@ -223,10 +236,37 @@ export default function HomeScreen() {
                 <Ionicons name="close-circle" size={18} color={colors.gray400} />
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
+
+          {/* Filter Button */}
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowFilters(true);
+            }}
+          >
+            <Ionicons name="options-outline" size={20} color={colors.black} />
+          </TouchableOpacity>
+
+          {/* BAI Button - Rainbow Gradient */}
+          <TouchableOpacity 
+            style={styles.baiButton}
+            onPress={handleBAIPress}
+          >
+            <LinearGradient
+              colors={['#FF6B6B', '#4ECDC4', '#45B7D1']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.baiGradient}
+            >
+              <Ionicons name="camera" size={20} color={colors.white} />
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       </View>
 
+      {/* Main Content */}
       <FlatList
         ref={flatListRef}
         data={trendProducts}
@@ -247,7 +287,7 @@ export default function HomeScreen() {
         scrollEventThrottle={16}
         ListHeaderComponent={
           <>
-            {/* Quick Actions Card */}
+            {/* Quick Actions */}
             <View style={styles.quickActionsCard}>
               <ScrollView 
                 horizontal 
@@ -260,94 +300,22 @@ export default function HomeScreen() {
                     style={styles.quickActionItem}
                     onPress={() => handleQuickAction(action.id, action.route)}
                   >
-                    {action.id === 'bai' ? (
-                      <LinearGradient
-                        colors={['#FF6B6B', '#4ECDC4', '#45B7D1']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.quickActionIconGradient}
-                      >
-                        <Ionicons name={action.icon as any} size={18} color={colors.white} />
-                      </LinearGradient>
-                    ) : (
-                      <View style={[styles.quickActionIcon, { backgroundColor: action.color + '15' }]}>
-                        <Ionicons name={action.icon as any} size={18} color={action.color} />
-                      </View>
-                    )}
+                    <View style={[styles.quickActionIcon, { backgroundColor: action.color + '15' }]}>
+                      <Ionicons name={action.icon as any} size={22} color={action.color} />
+                    </View>
                     <Text style={styles.quickActionLabel}>{action.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
 
-            {/* Popüler Aramalar Toggle */}
-            <TouchableOpacity
-              style={styles.popularToggle}
-              onPress={togglePopularSearches}
-            >
-              <Ionicons 
-                name="star" 
-                size={16} 
-                color={colors.primary} 
-              />
-              <Text style={styles.popularToggleText}>Popüler Aramalar</Text>
-              <Ionicons 
-                name={showPopularSearches ? "chevron-up" : "chevron-down"} 
-                size={16} 
-                color={colors.primary} 
-              />
-            </TouchableOpacity>
-
-            {/* Popular Searches */}
-            {showPopularSearches && (
-              <View style={styles.popularSearchesContainer}>
-                <ScrollView 
-                  horizontal 
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.tagCloudScroll}
-                >
-                  {POPULAR_SEARCHES.map((item, index) => {
-                    const tagColor = getTagColor(index);
-                    const tagSize = getTagSize(item.popularity);
-                    
-                    return (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={[
-                          styles.modernTag,
-                          { 
-                            backgroundColor: tagColor.bg,
-                            borderColor: tagColor.border,
-                            paddingHorizontal: tagSize.paddingH,
-                            paddingVertical: tagSize.paddingV,
-                          }
-                        ]}
-                        onPress={() => handlePopularSearch(item.text)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[
-                          styles.modernTagText,
-                          { color: tagColor.text, fontSize: tagSize.fontSize }
-                        ]}>
-                          {item.text}
-                        </Text>
-                        <View style={[styles.popularityDot, { backgroundColor: tagColor.text }]} />
-                      </TouchableOpacity>
-                    );
-                  })}
-                  
-                  {/* More Indicator */}
-                  <View style={styles.moreIndicator}>
-                    <Ionicons name="ellipsis-horizontal" size={20} color={colors.gray500} />
-                  </View>
-                </ScrollView>
-              </View>
-            )}
-
             {/* Section Header */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Trendleri Keşfedin</Text>
+                <View>
+                  <Text style={styles.sectionTitle}>Trendleri Keşfedin</Text>
+                  <Text style={styles.sectionSubtitle}>En popüler ürünler</Text>
+                </View>
                 <TouchableOpacity onPress={() => navigation.navigate('SearchResults', { 
                   query: 'trends',
                   title: 'Trend Ürünler'
@@ -373,6 +341,82 @@ export default function HomeScreen() {
           ) : null
         }
       />
+
+      {/* Popular Searches Modal */}
+      <Modal
+        visible={showPopularSearches}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowPopularSearches(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowPopularSearches(false)}
+        >
+          <View style={styles.popularSearchesModal}>
+            <View style={styles.modalHandle} />
+            
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Popüler Aramalar</Text>
+              <TouchableOpacity onPress={() => setShowPopularSearches(false)}>
+                <Ionicons name="close" size={24} color={colors.black} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.popularSearchesList}
+            >
+              {POPULAR_SEARCHES.map((item, index) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.popularSearchItem}
+                  onPress={() => handlePopularSearch(item.text)}
+                >
+                  <View style={styles.popularSearchIcon}>
+                    <Ionicons name="search" size={16} color={colors.gray600} />
+                  </View>
+                  <Text style={styles.popularSearchText}>{item.text}</Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.gray400} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+
+      {/* Menu Dropdown */}
+      {showMenu && (
+        <View style={styles.dropdown}>
+          <View style={styles.dropdownHeader}>
+            <Text style={styles.dropdownTitle}>Menü</Text>
+            <TouchableOpacity onPress={() => setShowMenu(false)}>
+              <Ionicons name="close" size={20} color={colors.black} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.dropdownContent}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleMenuLink('https://bazenda.com/hakkinda')}
+            >
+              <Ionicons name="information-circle-outline" size={20} color={colors.black} />
+              <Text style={styles.menuText}>Hakkımızda</Text>
+              <Ionicons name="open-outline" size={16} color={colors.gray400} style={styles.menuArrow} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleMenuLink('https://bazenda.com/iletisim')}
+            >
+              <Ionicons name="mail-outline" size={20} color={colors.black} />
+              <Text style={styles.menuText}>İletişim</Text>
+              <Ionicons name="open-outline" size={16} color={colors.gray400} style={styles.menuArrow} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Scroll to Top Button */}
       {showScrollTop && (
@@ -405,38 +449,60 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  stickyHeader: {
+  
+  // ===== MODERN HEADER =====
+  modernHeader: {
     backgroundColor: colors.white,
     paddingBottom: spacing.s,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray200,
+    ...shadows.small,
     zIndex: 10,
   },
+  
   topBar: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.m,
     paddingTop: spacing.s,
-    paddingBottom: spacing.xs,
+    paddingBottom: spacing.s,
   },
-  smallLogo: {
-    width: 80,
-    height: 28,
-    marginRight: spacing.xs,
+  
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  tagline: {
-    fontSize: 10,
-    color: colors.gray600,
-    fontWeight: '500',
+  
+  logo: {
+    width: 100,
+    height: 32,
+    resizeMode: 'contain',
   },
-  searchBarContainer: {
+  
+  headerIcons: {
+    flexDirection: 'row',
+    gap: spacing.s,
+  },
+  
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing.m,
-    paddingTop: spacing.xs,
+    gap: spacing.s,
   },
-  searchBar: {
+  
+  mainSearchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.gray50,
@@ -446,12 +512,41 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.gray200,
   },
-  searchInput: {
+  
+  mainSearchInput: {
     flex: 1,
     marginLeft: spacing.s,
     fontSize: 14,
     color: colors.black,
   },
+  
+  actionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.gray200,
+  },
+  
+  baiButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...shadows.medium,
+  },
+  
+  baiGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Quick Actions
   quickActionsCard: {
     backgroundColor: colors.white,
     marginHorizontal: spacing.m,
@@ -461,14 +556,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     ...shadows.small,
   },
+  
   quickActionsScroll: {
     paddingHorizontal: spacing.m,
     gap: spacing.m,
   },
+  
   quickActionItem: {
     alignItems: 'center',
     minWidth: 70,
   },
+  
   quickActionIcon: {
     width: 48,
     height: 48,
@@ -477,113 +575,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
-  quickActionIconGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-    ...shadows.small,
-  },
+  
   quickActionLabel: {
     fontSize: 11,
     color: colors.gray700,
     fontWeight: '600',
   },
-  popularToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary + '10',
-    marginHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    borderRadius: 10,
-    gap: spacing.xs,
-    marginBottom: spacing.s,
-  },
-  popularToggleText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  popularSearchesContainer: {
-    backgroundColor: 'transparent',
-    marginHorizontal: spacing.m,
-    marginBottom: spacing.m,
-    paddingVertical: spacing.s,
-  },
-  tagCloudScroll: {
-    paddingHorizontal: spacing.xs,
-    gap: spacing.s,
-  },
-  modernTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    marginRight: spacing.s,
-  },
-  modernTagText: {
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  popularityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginLeft: 6,
-  },
-  moreIndicator: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.gray100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: spacing.s,
-  },
+  
+  // Section
   section: {
     marginBottom: spacing.m,
     paddingTop: spacing.s,
   },
+  
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: spacing.m,
   },
+  
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: '700',
+    color: colors.black,
   },
-  seeAll: {
+  
+  sectionSubtitle: {
     fontSize: 12,
+    color: colors.gray600,
+    marginTop: 2,
+  },
+  
+  seeAll: {
+    fontSize: 13,
     color: colors.primary,
     fontWeight: '600',
   },
+  
+  // Products Grid
   trendGrid: {
     padding: spacing.s,
   },
+  
   trendProductCard: {
     width: '50%',
     padding: spacing.s,
   },
+  
   loadingContainer: {
     paddingVertical: spacing.xl,
     alignItems: 'center',
   },
+  
   loadingMore: {
     paddingVertical: spacing.l,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
+  // Scroll to Top
   scrollTopButton: {
     position: 'absolute',
     right: spacing.m,
     bottom: spacing.xl,
     zIndex: 100,
   },
+  
   scrollTopGradient: {
     width: 56,
     height: 56,
@@ -591,5 +649,138 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.large,
+  },
+  
+  // Popular Searches Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  
+  popularSearchesModal: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+  },
+  
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: colors.gray300,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: spacing.s,
+    marginBottom: spacing.m,
+  },
+  
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.l,
+    paddingBottom: spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray200,
+  },
+  
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.black,
+  },
+  
+  popularSearchesList: {
+    padding: spacing.l,
+  },
+  
+  popularSearchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
+  
+  popularSearchIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.m,
+  },
+  
+  popularSearchText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.black,
+    fontWeight: '500',
+  },
+  
+  // Dropdowns
+  dropdown: {
+    position: 'absolute',
+    top: 100,
+    right: spacing.m,
+    width: 260,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    ...shadows.medium,
+    overflow: 'hidden',
+    zIndex: 1000,
+  },
+  
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray200,
+  },
+  
+  dropdownTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.black,
+  },
+  
+  dropdownContent: {
+    padding: spacing.m,
+    maxHeight: 300,
+  },
+  
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  
+  emptyText: {
+    fontSize: 13,
+    color: colors.gray600,
+    marginTop: spacing.m,
+  },
+  
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
+  
+  menuText: {
+    fontSize: 14,
+    color: colors.black,
+    fontWeight: '500',
+    marginLeft: spacing.m,
+    flex: 1,
+  },
+  
+  menuArrow: {
+    marginLeft: 'auto',
   },
 });

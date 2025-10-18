@@ -5,12 +5,13 @@ export interface Product {
   product_info: number;
   product_title: string;
   image_link: string;
-  product_link: string; // Bazenda redirect linki
-  app_product_link: string; // Direkt mağaza linki
-  original_link: string; // Orijinal link
+  product_link: string;
+  app_product_link: string;
+  original_link: string;
   
   last_updated?: string;
   history_count?: number;
+  discount_amount?: string;  // ✅ YENİ: İndirim miktarı
   
   shop_id: number;
   shop_name: string;

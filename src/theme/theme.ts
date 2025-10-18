@@ -1,4 +1,4 @@
-// src/theme/theme.ts - GÜNCELLENMİŞ
+// src/theme/theme.ts - PRODUCTION READY WITH OPTIMIZED SIZES
 export const colors = {
   // Bazenda Brand
   primary: '#f67310',
@@ -8,7 +8,7 @@ export const colors = {
   secondary: '#042b5a',
   secondaryLight: '#0066B3',
   
-  // Tag Colors (Bazenda'dan)
+  // Tag Colors
   tag1: '#FF6B6B',
   tag2: '#4ECDC4',
   tag3: '#45B7D1',
@@ -69,69 +69,75 @@ export const borderRadius = {
   round: 9999,
 };
 
+// Optimized typography - smaller, cleaner sizes
 export const typography = {
   h1: {
-    fontSize: 32,
-    fontWeight: '700' as const,
-    lineHeight: 40,
-  },
-  h2: {
     fontSize: 28,
     fontWeight: '700' as const,
     lineHeight: 36,
   },
-  h3: {
+  h2: {
     fontSize: 24,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     lineHeight: 32,
   },
-  h4: {
+  h3: {
     fontSize: 20,
     fontWeight: '600' as const,
     lineHeight: 28,
   },
-  body: {
-    fontSize: 16,
-    fontWeight: '400' as const,
+  h4: {
+    fontSize: 17,
+    fontWeight: '600' as const,
     lineHeight: 24,
   },
-  caption: {
+  body: {
     fontSize: 14,
     fontWeight: '400' as const,
     lineHeight: 20,
   },
-  small: {
+  caption: {
     fontSize: 12,
+    fontWeight: '400' as const,
+    lineHeight: 18,
+  },
+  small: {
+    fontSize: 11,
     fontWeight: '400' as const,
     lineHeight: 16,
   },
+  tiny: {
+    fontSize: 10,
+    fontWeight: '400' as const,
+    lineHeight: 14,
+  },
   button: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600' as const,
-    lineHeight: 24,
+    lineHeight: 20,
   },
 };
 
 export const shadows = {
   small: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
   },
   medium: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   large: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
 };

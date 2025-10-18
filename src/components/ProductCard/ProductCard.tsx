@@ -1,4 +1,4 @@
-// src/components/ProductCard/ProductCard.tsx - TAM HALİ
+// src/components/ProductCard/ProductCard.tsx - PRODUCTION READY
 import React, { useState } from 'react';
 import { Linking } from 'react-native';
 import {
@@ -10,6 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, typography, shadows } from '../../theme/theme';
 import { Product } from '../../types';
@@ -66,9 +67,9 @@ export default function ProductCard({
 
   return (
     <>
-     <TouchableOpacity
+      <TouchableOpacity
         style={styles.card}
-        onPress={handleProductPress} // direkt mağazaya git
+        onPress={handleProductPress}
         activeOpacity={0.9}
       >
         {/* Image Container */}
@@ -79,26 +80,36 @@ export default function ProductCard({
             resizeMode="cover"
           />
           
-          {/* Favorite Button - Top Left */}
+          {/* Favorite Button - Top Left with Active State */}
           <TouchableOpacity
-            style={styles.favoriteButton}
+            style={[
+              styles.favoriteButton,
+              isFavorite && styles.favoriteButtonActive
+            ]}
             onPress={handleFavoritePress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons
               name={isFavorite ? 'heart' : 'heart-outline'}
-              size={20}
-              color={isFavorite ? colors.error : colors.white}
+              size={18}
+              color={isFavorite ? colors.white : colors.white}
             />
           </TouchableOpacity>
 
-          {/* BAI Mini Button - Bottom Right */}
+          {/* BAI Mini Button - Bottom Right with Gradient */}
           <TouchableOpacity
             style={styles.baiMiniButton}
             onPress={handleBAIPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.baiMiniText}>BAI</Text>
+            <LinearGradient
+              colors={[colors.primary, colors.primaryLight]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.baiMiniGradient}
+            >
+              <Text style={styles.baiMiniText}>BAI</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -114,10 +125,10 @@ export default function ProductCard({
             </Text>
             <TouchableOpacity 
               style={styles.goButton}
-              onPress={handleGoPress} // git butonu da aynı işi yapsın
+              onPress={handleGoPress}
             >
               <Text style={styles.goButtonText}>Git</Text>
-              <Ionicons name="arrow-forward" size={12} color={colors.primary} />
+              <Ionicons name="arrow-forward" size={10} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
@@ -134,7 +145,7 @@ export default function ProductCard({
                 style={styles.historyButton}
                 onPress={handlePriceHistoryPress}
               >
-                <Ionicons name="trending-down" size={14} color={colors.primary} />
+                <Ionicons name="trending-down" size={12} color={colors.primary} />
                 <Text style={styles.historyButtonText}>
                   Fiyat Geçmişi ({product.history_count})
                 </Text>
@@ -142,22 +153,22 @@ export default function ProductCard({
             )}
 
             {/* Size/Color Info */}
-            {(product.size_count || product.color_count) && (
+            {(product.size_count || product.color_count) ? (
               <View style={styles.variantRow}>
                 {product.size_count > 0 && (
                   <View style={styles.variantBadge}>
-                    <Ionicons name="resize-outline" size={10} color={colors.gray600} />
+                    <Ionicons name="resize-outline" size={9} color={colors.gray600} />
                     <Text style={styles.variantText}>{product.size_count}</Text>
                   </View>
                 )}
                 {product.color_count > 0 && (
                   <View style={styles.variantBadge}>
-                    <Ionicons name="color-palette-outline" size={10} color={colors.gray600} />
+                    <Ionicons name="color-palette-outline" size={9} color={colors.gray600} />
                     <Text style={styles.variantText}>{product.color_count}</Text>
                   </View>
                 )}
               </View>
-            )}
+            ) : null}
           </View>
         </View>
       </TouchableOpacity>
@@ -177,15 +188,15 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     backgroundColor: colors.white,
-    borderRadius: 12,
+    borderRadius: 10,
     marginBottom: spacing.m,
     ...shadows.small,
   },
   imageContainer: {
     width: '100%',
     aspectRatio: 0.75,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -198,56 +209,48 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.s,
     left: spacing.s,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
-  shopBadge: {
-    position: 'absolute',
-    top: spacing.s,
-    right: spacing.s,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.s,
-    paddingVertical: 4,
-    borderRadius: 12,
-    maxWidth: CARD_WIDTH * 0.6,
-    zIndex: 10,
-  },
-  shopBadgeText: {
-    ...typography.small,
-    color: colors.white,
-    fontWeight: '600',
-    fontSize: 10,
+  favoriteButtonActive: {
+    backgroundColor: colors.error,
   },
   baiMiniButton: {
     position: 'absolute',
     bottom: spacing.s,
     right: spacing.s,
-    backgroundColor: colors.primary,
+    zIndex: 10,
+    borderRadius: 7,
+    overflow: 'hidden',
+    ...shadows.small,
+  },
+  baiMiniGradient: {
     paddingHorizontal: spacing.s,
     paddingVertical: 4,
-    borderRadius: 8,
-    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   baiMiniText: {
     ...typography.small,
     color: colors.white,
     fontWeight: '700',
-    fontSize: 10,
+    fontSize: 9,
   },
   infoContainer: {
-    padding: spacing.m,
+    padding: spacing.s,
   },
   productTitle: {
-    ...typography.caption,
+    fontSize: 12,
     color: colors.black,
-    marginBottom: spacing.s,
-    minHeight: 34,
-    lineHeight: 17,
+    marginBottom: spacing.xs,
+    minHeight: 32,
+    lineHeight: 16,
+    fontWeight: '500',
   },
   shopRow: {
     flexDirection: 'row',
@@ -256,58 +259,51 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   shopName: {
-    ...typography.small,
+    fontSize: 10,
     color: colors.gray600,
     flex: 1,
-    fontSize: 11,
   },
   goButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.gray100,
-    paddingHorizontal: spacing.s,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 3,
+    borderRadius: 6,
     marginLeft: spacing.xs,
   },
   goButtonText: {
-    ...typography.small,
+    fontSize: 10,
     color: colors.primary,
     fontWeight: '600',
     marginRight: 2,
-    fontSize: 11,
   },
   priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: spacing.xs,
   },
   price: {
-    ...typography.body,
+    fontSize: 14,
     color: colors.primary,
     fontWeight: '700',
-    fontSize: 15,
   },
   bottomActions: {
     marginTop: spacing.xs,
+    gap: spacing.xs,
   },
   historyButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.gray100,
-    paddingHorizontal: spacing.s,
-    paddingVertical: spacing.xs,
-    borderRadius: 8,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 4,
+    borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: spacing.xs,
   },
   historyButtonText: {
-    ...typography.small,
+    fontSize: 9,
     color: colors.primary,
     fontWeight: '600',
-    marginLeft: 4,
-    fontSize: 10,
+    marginLeft: 3,
   },
   variantRow: {
     flexDirection: 'row',
@@ -322,9 +318,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   variantText: {
-    ...typography.small,
+    fontSize: 9,
     color: colors.gray600,
     marginLeft: 2,
-    fontSize: 9,
   },
 });

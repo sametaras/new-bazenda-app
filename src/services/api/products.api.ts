@@ -8,7 +8,7 @@ const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   headers: {
-    'Accept': 'application/json',
+    'Content-Type': 'application/x-www-form-urlencoded',
   },
 });
 
@@ -18,12 +18,13 @@ export class ProductsService {
    */
   static async getTrendProducts(page: number = 1): Promise<Product[]> {
     try {
-      const response = await apiClient.post('/get_results', {
-        query: '',
-        page: page.toString(),
-        sort_by: '0',
-        search_type: 'text',
-      });
+      const formData = new URLSearchParams();
+      formData.append('query', '');
+      formData.append('page', page.toString());
+      formData.append('sort_by', '0');
+      formData.append('search_type', 'text');
+
+      const response = await apiClient.post('/get_results', formData.toString());
 
       if (response.data.success) {
         return response.data.results || [];
@@ -37,16 +38,19 @@ export class ProductsService {
   }
 
   /**
-   * Radar araması
+   * Radar araması - ÖNEMLİ: query parametresi "radar" olmalı
    */
   static async getRadarProducts(): Promise<Product[]> {
     try {
-      const response = await apiClient.post('/get_results', {
-        query: 'radar',
-        page: '1',
-        sort_by: '0',
-        search_type: 'text',
-      });
+      const formData = new URLSearchParams();
+      formData.append('query', 'radar');  // ✅ RADAR yazıyor
+      formData.append('price_min', '');
+      formData.append('price_max', '');
+      formData.append('page', '1');
+      formData.append('sort_by', '0');
+      formData.append('search_type', 'text');
+
+      const response = await apiClient.post('/get_results', formData.toString());
 
       if (response.data.success) {
         return response.data.results || [];
@@ -68,7 +72,7 @@ export class ProductsService {
     filters?: any
   ): Promise<{ products: Product[]; totalCount: number }> {
     try {
-      const formData = new FormData();
+      const formData = new URLSearchParams();
       formData.append('query', query);
       formData.append('page', page.toString());
       formData.append('sort_by', filters?.sortBy || '0');
@@ -76,21 +80,17 @@ export class ProductsService {
 
       if (filters?.priceMin) {
         formData.append('price_min', filters.priceMin.toString());
+      } else {
+        formData.append('price_min', '');
       }
+      
       if (filters?.priceMax) {
         formData.append('price_max', filters.priceMax.toString());
-      }
-      if (filters?.genders && filters.genders.length > 0) {
-        filters.genders.forEach((gender: string) => {
-          formData.append('gender_select[]', gender);
-        });
+      } else {
+        formData.append('price_max', '');
       }
 
-      const response = await apiClient.post('/get_results', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await apiClient.post('/get_results', formData.toString());
 
       if (response.data.success) {
         return {

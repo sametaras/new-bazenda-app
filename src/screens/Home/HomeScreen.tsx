@@ -1,5 +1,5 @@
-// src/screens/Home/HomeScreen.tsx - GÜNCEL TAM HAL
-import React, { useState } from 'react';
+// src/screens/Home/HomeScreen.tsx - PRODUCTION READY
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   TextInput,
   FlatList,
   ActivityIndicator,
+  Image,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,8 +21,8 @@ import { colors, spacing, typography, shadows } from '../../theme/theme';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import ProductsService from '../../services/api/products.api';
 import { useFavorites } from '../../store/favoritesStore';
-
 import AnalyticsService from '../../services/analytics/analytics.service';
+import FilterModal from '../../components/FilterModal/FilterModal';
 
 const QUICK_ACTIONS = [
   { id: 'favorites', icon: 'heart', label: 'Favoriler', route: 'Favorilerim' },
@@ -28,18 +30,67 @@ const QUICK_ACTIONS = [
   { id: 'trends', icon: 'flame', label: 'Trendler', action: 'trends' },
 ];
 
+const POPULAR_SEARCHES = [
+  { id: '1', text: 'külot', size: 4, color: 1 },
+  { id: '2', text: 'tulum', size: 3, color: 2 },
+  { id: '3', text: 'tayt', size: 3, color: 3 },
+  { id: '4', text: 'tunik', size: 3, color: 4 },
+  { id: '5', text: 'atlet', size: 4, color: 5 },
+  { id: '6', text: 'boxer', size: 4, color: 1 },
+  { id: '7', text: 'yağmurluk', size: 3, color: 2 },
+  { id: '8', text: 'çorap', size: 3, color: 3 },
+  { id: '9', text: 'salopet', size: 2, color: 4 },
+  { id: '10', text: 'tişört', size: 5, color: 5 },
+  { id: '11', text: 'bermuda', size: 3, color: 1 },
+  { id: '12', text: 'korse', size: 2, color: 2 },
+  { id: '13', text: 'bluz', size: 4, color: 3 },
+  { id: '14', text: 'sütyen', size: 4, color: 4 },
+  { id: '15', text: 'pantolon', size: 5, color: 5 },
+  { id: '16', text: 'kaban', size: 4, color: 1 },
+  { id: '17', text: 'parka', size: 2, color: 2 },
+  { id: '18', text: 'yelek', size: 4, color: 3 },
+  { id: '19', text: 'elbise', size: 5, color: 4 },
+  { id: '20', text: 'ayakkabı', size: 5, color: 5 },
+  { id: '21', text: 'atkı', size: 3, color: 1 },
+  { id: '22', text: 'kapri', size: 2, color: 2 },
+  { id: '23', text: 'ceket', size: 4, color: 3 },
+  { id: '24', text: 'kazak', size: 5, color: 4 },
+  { id: '25', text: 'pijama', size: 4, color: 5 },
+  { id: '26', text: 'gecelik', size: 3, color: 1 },
+  { id: '27', text: 'mont', size: 5, color: 2 },
+  { id: '28', text: 'etek', size: 5, color: 3 },
+  { id: '29', text: 'trençkot', size: 2, color: 4 },
+  { id: '30', text: 'bot', size: 5, color: 5 },
+  { id: '31', text: 'gömlek', size: 5, color: 1 },
+  { id: '32', text: 'tshirt', size: 5, color: 2 },
+  { id: '33', text: 'şort', size: 3, color: 3 },
+  { id: '34', text: 'sabahlık', size: 3, color: 4 },
+];
+
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const flatListRef = useRef<FlatList>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [trendProducts, setTrendProducts] = useState<any[]>([]);
   const [isLoadingTrends, setIsLoadingTrends] = useState(false);
+  const [trendPage, setTrendPage] = useState(1);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showPopularSearches, setShowPopularSearches] = useState(true); // İlk başta açık
+  
   const { toggleFavorite, isFavorite } = useFavorites();
 
-  const loadTrendProducts = async () => {
+  const loadTrendProducts = async (page: number = 1) => {
     setIsLoadingTrends(true);
     try {
-      const products = await ProductsService.getTrendProducts(1);
-      setTrendProducts(products);
+      const products = await ProductsService.getTrendProducts(page);
+      if (page === 1) {
+        setTrendProducts(products);
+      } else {
+        setTrendProducts(prev => [...prev, ...products]);
+      }
     } catch (error) {
       console.error('Trend products error:', error);
     } finally {
@@ -49,8 +100,19 @@ export default function HomeScreen() {
 
   React.useEffect(() => {
     AnalyticsService.logScreenView('Home');
-    loadTrendProducts();
+    loadTrendProducts(1);
   }, []);
+
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setShowScrollTop(offsetY > 500);
+    scrollY.setValue(offsetY);
+  };
+
+  const scrollToTop = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
 
   const handleQuickAction = (action: string, route?: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -85,19 +147,78 @@ export default function HomeScreen() {
     }
   };
 
+  const handlePopularSearch = (searchText: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    AnalyticsService.logSearch(searchText, 'text');
+    setShowPopularSearches(false);
+    navigation.navigate('SearchResults', { 
+      query: searchText
+    } as never);
+  };
+
+  const togglePopularSearches = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowPopularSearches(!showPopularSearches);
+  };
+
+  const getTagStyle = (size: number, color: number) => {
+    // Font size based on size (2-5)
+    const fontSize = 10 + (size * 2);
+    
+    // Colors from bazenda.com
+    const tagColors = [
+      colors.tag1, // #FF6B6B
+      colors.tag2, // #4ECDC4
+      colors.tag3, // #45B7D1
+      colors.tag4, // #96CEB4
+      colors.tag5, // #9B59B6
+    ];
+    
+    return {
+      fontSize,
+      color: tagColors[color - 1] || colors.tag1,
+    };
+  };
+
+  const handleFilterPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowFilters(!showFilters);
+  };
+
+  const handleApplyFilters = (appliedFilters: any) => {
+    AnalyticsService.logFilterUsage('home_filters', appliedFilters);
+    navigation.navigate('SearchResults', { 
+      query: searchQuery || 'all',
+      filters: appliedFilters
+    } as never);
+  };
+
+  const loadMoreTrends = () => {
+    if (!isLoadingTrends && trendPage < 2) {
+      const nextPage = trendPage + 1;
+      setTrendPage(nextPage);
+      loadTrendProducts(nextPage);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.logo}>bazenda</Text>
-          <Text style={styles.tagline}>Akıllı Alışveriş Asistanı</Text>
+      {/* Header with Shadow */}
+      <View style={styles.headerContainer}>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../../assets/bazenda-logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.tagline}>Akıllı Alışveriş Asistanınız</Text>
         </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color={colors.gray500} />
+            <Ionicons name="search" size={18} color={colors.gray500} />
             <TextInput
               style={styles.searchInput}
               placeholder="Ne arıyorsunuz?"
@@ -111,6 +232,32 @@ export default function HomeScreen() {
 
           {/* Quick Actions Bar */}
           <View style={styles.quickActionsBar}>
+            {/* Popular Searches Toggle Button */}
+            <TouchableOpacity
+              style={styles.popularSearchAction}
+              onPress={togglePopularSearches}
+            >
+              <View style={styles.popularSearchIcon}>
+                <Ionicons 
+                  name={showPopularSearches ? "chevron-up" : "chevron-down"} 
+                  size={16} 
+                  color={colors.primary} 
+                />
+              </View>
+              <Text style={styles.quickActionLabel}>Popüler</Text>
+            </TouchableOpacity>
+
+            {/* Filter Button */}
+            <TouchableOpacity
+              style={styles.filterAction}
+              onPress={handleFilterPress}
+            >
+              <View style={styles.filterIcon}>
+                <Ionicons name="options" size={16} color={colors.primary} />
+              </View>
+              <Text style={styles.quickActionLabel}>Filtre</Text>
+            </TouchableOpacity>
+
             {QUICK_ACTIONS.map((action) => (
               <TouchableOpacity
                 key={action.id}
@@ -118,118 +265,133 @@ export default function HomeScreen() {
                 onPress={() => handleQuickAction(action.action, action.route)}
               >
                 <View style={styles.quickActionIcon}>
-                  <Ionicons name={action.icon as any} size={20} color={colors.primary} />
+                  <Ionicons name={action.icon as any} size={16} color={colors.primary} />
                 </View>
                 <Text style={styles.quickActionLabel}>{action.label}</Text>
               </TouchableOpacity>
             ))}
 
-            {/* BAI Button - Larger */}
+            {/* BAI Button */}
             <TouchableOpacity
               style={styles.baiQuickAction}
               onPress={handleBAIPress}
             >
               <LinearGradient
-                colors={[colors.primary, colors.primaryLight]}
+                colors={['#FF6B6B', '#4ECDC4', '#45B7D1']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={styles.baiQuickActionGradient}
               >
-                <Ionicons name="camera" size={28} color={colors.white} />
+                <Ionicons name="camera" size={24} color={colors.white} />
               </LinearGradient>
               <Text style={styles.baiQuickActionLabel}>BAI</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Popular Searches Dropdown kaldırıldı - üstte FlatList içinde */}
         </View>
+      </View>
 
-        {/* BAI Feature Card - Web Style */}
-        <TouchableOpacity
-          activeOpacity={0.95}
-          onPress={handleBAIPress}
-        >
-          <View style={styles.baiCard}>
-            {/* Left Side - Colorful Gradient */}
-            <LinearGradient
-              colors={['#FF6B6B', '#4ECDC4', '#45B7D1']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.baiCardLeftGradient}
+      <FlatList
+        ref={flatListRef}
+        data={trendProducts}
+        renderItem={({ item }) => (
+          <View style={styles.trendProductCard}>
+            <ProductCard
+              product={item}
+              onFavoritePress={() => toggleFavorite(item.product_id)}
+              onBAIPress={handleBAIPress}
+              isFavorite={isFavorite(item.product_id)}
             />
-
-            {/* Right Side - Content */}
-            <View style={styles.baiCardContent}>
-              <View style={styles.baiNewBadge}>
-                <Text style={styles.baiNewText}>YENİ</Text>
+          </View>
+        )}
+        keyExtractor={(item) => item.product_id}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.trendGrid}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        ListHeaderComponent={
+          <>
+            {/* Popular Searches Dropdown - bazenda.com style */}
+            {showPopularSearches && (
+              <View style={styles.popularSearchesContainer}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.tagCloudContent}
+                >
+                  {POPULAR_SEARCHES.map((item) => {
+                    const tagStyle = getTagStyle(item.size, item.color);
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.tagItem}
+                        onPress={() => handlePopularSearch(item.text)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.tagItemText, tagStyle]}>
+                          {item.text}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
-              
-              <Ionicons name="camera" size={48} color={colors.primary} />
-              <Text style={styles.baiTitle}>Fotoğraf ile Arama</Text>
-              <Text style={styles.baiSubtitle}>Çek, Bul, Satın Al</Text>
-              
-              <View style={styles.baiFeatures}>
-                <View style={styles.baiFeature}>
-                  <Ionicons name="flash" size={12} color={colors.primary} />
-                  <Text style={styles.baiFeatureText}>Hızlı</Text>
-                </View>
-                <View style={styles.baiFeature}>
-                  <Ionicons name="shield-checkmark" size={12} color={colors.success} />
-                  <Text style={styles.baiFeatureText}>Güvenli</Text>
-                </View>
-                <View style={styles.baiFeature}>
-                  <Ionicons name="sparkles" size={12} color={colors.info} />
-                  <Text style={styles.baiFeatureText}>AI Destekli</Text>
-                </View>
+            )}
+
+            {/* Trend Products Header */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Trendleri Keşfedin</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('SearchResults', { 
+                  query: 'trends',
+                  title: 'Trend Ürünler'
+                } as never)}>
+                  <Text style={styles.seeAll}>Tümünü Gör</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </View>
-        </TouchableOpacity>
-
-        {/* Trend Products */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Trendleri Keşfedin</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('SearchResults', { 
-              query: 'trends',
-              title: 'Trend Ürünler'
-            } as never)}>
-              <Text style={styles.seeAll}>Tümünü Gör</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Scroll Hint */}
-          <View style={styles.scrollHint}>
-            <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-            <Text style={styles.scrollHintText}>Sola kaydırın</Text>
-          </View>
-
-          {isLoadingTrends ? (
+          </>
+        }
+        ListFooterComponent={
+          isLoadingTrends && trendProducts.length > 0 ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          isLoadingTrends ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color={colors.primary} />
             </View>
-          ) : (
-            <FlatList
-              horizontal
-              data={trendProducts}
-              renderItem={({ item }) => (
-                <View style={styles.trendProductCard}>
-                  <ProductCard
-                    product={item}
-                    onFavoritePress={() => toggleFavorite(item.product_id)}
-                    onBAIPress={handleBAIPress}
-                    isFavorite={isFavorite(item.product_id)}
-                  />
-                </View>
-              )}
-              keyExtractor={(item) => item.product_id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.trendList}
-              ListEmptyComponent={() => (
-                <View style={styles.emptyList}>
-                  <Text style={styles.emptyText}>Ürünler yükleniyor...</Text>
-                </View>
-              )}
-            />
-          )}
-        </View>
-      </ScrollView>
+          ) : null
+        }
+      />
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <TouchableOpacity
+          style={styles.scrollTopButton}
+          onPress={scrollToTop}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={[colors.primary, colors.primaryLight]}
+            style={styles.scrollTopGradient}
+          >
+            <Ionicons name="arrow-up" size={24} color={colors.white} />
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        onApply={handleApplyFilters}
+      />
     </SafeAreaView>
   );
 }
@@ -239,187 +401,198 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
+  headerContainer: {
+    backgroundColor: colors.white,
+    paddingBottom: spacing.m,
+    ...shadows.medium,
+    zIndex: 10,
+  },
+  logoContainer: {
     alignItems: 'center',
-    paddingVertical: spacing.l,
+    paddingTop: spacing.m,
+    paddingBottom: spacing.m,
   },
   logo: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: colors.primary,
+    width: 120,
+    height: 40,
+    marginBottom: spacing.xs,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 11,
     color: colors.gray600,
-    marginTop: 4,
+    fontWeight: '500',
   },
   searchContainer: {
     paddingHorizontal: spacing.m,
-    marginBottom: spacing.l,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.gray100,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: spacing.m,
-    paddingVertical: spacing.m,
-    marginBottom: spacing.m,
+    paddingVertical: spacing.s,
+    marginBottom: spacing.s,
   },
   searchInput: {
     flex: 1,
     marginLeft: spacing.s,
-    fontSize: 16,
+    fontSize: 14,
   },
   quickActionsBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  popularSearchAction: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  popularSearchIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  filterAction: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  filterIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
   quickAction: {
     alignItems: 'center',
     flex: 1,
   },
   quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.gray100,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
   quickActionLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.gray700,
     fontWeight: '500',
   },
   baiQuickAction: {
     alignItems: 'center',
-    marginLeft: spacing.s,
+    marginLeft: spacing.xs,
   },
   baiQuickActionGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
   baiQuickActionLabel: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  baiCard: {
-    marginHorizontal: spacing.m,
-    marginBottom: spacing.l,
-    borderRadius: 20,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    backgroundColor: colors.white,
-    ...shadows.medium,
-  },
-  baiCardLeftGradient: {
-    width: 8,
-  },
-  baiCardContent: {
-    flex: 1,
-    padding: spacing.l,
-    alignItems: 'center',
-  },
-  baiNewBadge: {
-    position: 'absolute',
-    top: spacing.m,
-    right: spacing.m,
-    backgroundColor: colors.black,
-    paddingHorizontal: spacing.m,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  baiNewText: {
-    color: colors.white,
     fontSize: 11,
-    fontWeight: '700',
-  },
-  baiTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.black,
-    marginTop: spacing.m,
-  },
-  baiSubtitle: {
-    fontSize: 14,
-    color: colors.gray600,
-    marginTop: spacing.xs,
-  },
-  baiFeatures: {
-    flexDirection: 'row',
-    marginTop: spacing.m,
-    gap: spacing.s,
-  },
-  baiFeature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.gray100,
-    paddingHorizontal: spacing.m,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
-  },
-  baiFeatureText: {
     color: colors.gray700,
-    fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   section: {
     marginBottom: spacing.l,
+    paddingTop: spacing.m,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.m,
-    marginBottom: spacing.s,
+    marginBottom: spacing.xs,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
   },
   seeAll: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.primary,
     fontWeight: '600',
   },
-  scrollHint: {
+  popularSection: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.l,
+    backgroundColor: colors.white,
+    marginBottom: spacing.m,
+  },
+  popularHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.m,
-    marginBottom: spacing.s,
+    marginBottom: spacing.m,
   },
-  scrollHintText: {
-    fontSize: 12,
-    color: colors.primary,
-    marginLeft: 4,
+  popularTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.black,
+    marginLeft: spacing.s,
+  },
+  popularTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.s,
+  },
+  popularTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.gray50,
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.s,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+  },
+  popularTagEmoji: {
+    fontSize: 14,
+    marginRight: spacing.xs,
+  },
+  popularTagText: {
+    fontSize: 13,
+    color: colors.gray700,
     fontWeight: '500',
   },
-  trendList: {
-    paddingLeft: spacing.m,
+  trendGrid: {
+    padding: spacing.s,
   },
   trendProductCard: {
-    marginRight: spacing.m,
-    width: 160,
+    width: '50%',
+    padding: spacing.s,
   },
   loadingContainer: {
     paddingVertical: spacing.xl,
     alignItems: 'center',
   },
-  emptyList: {
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.m,
+  loadingMore: {
+    paddingHorizontal: spacing.l,
+    justifyContent: 'center',
   },
-  emptyText: {
-    fontSize: 14,
-    color: colors.gray500,
+  scrollTopButton: {
+    position: 'absolute',
+    right: spacing.m,
+    bottom: spacing.xl,
+    zIndex: 100,
+  },
+  scrollTopGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.large,
   },
 });

@@ -164,5 +164,9 @@ export const useFavorites = create<FavoritesStore>()(
         return get().favorites.size;
       },
     }),
+    {
+      name: 'bazenda-favorites-v2',
       storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
 );

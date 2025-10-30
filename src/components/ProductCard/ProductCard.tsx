@@ -50,6 +50,7 @@ export default function ProductCard({
   const isFavorite = isFavoriteProp !== undefined
     ? isFavoriteProp
     : checkIsFavorite(product.product_id);
+
   // Loading mesajlarını döndür
   useEffect(() => {
     if (showBAILoading) {
@@ -63,7 +64,6 @@ export default function ProductCard({
       setLoadingMessageIndex(0);
     }
     return undefined;
-  }, [showBAILoading]);
   }, [showBAILoading]);
   
   const handleFavoritePress = () => {

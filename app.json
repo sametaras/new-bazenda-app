@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "new-bazenda-app",
-    "slug": "new-bazenda-app",
+    "name": "Bazenda",
+    "slug": "bazenda-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,9 +12,21 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.newbazendaapp"
+      "bundleIdentifier": "com.bazenda.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Bazenda, ürün aramak için kameranızı kullanmanıza izin verir.",
+        "NSPhotoLibraryUsageDescription": "Bazenda, fotoğraf galerinizden ürün aramanıza izin verir.",
+        "NSPhotoLibraryAddUsageDescription": "Bazenda, bulunan ürünleri kaydetmenize izin verir."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,10 +35,48 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.newbazendaapp"
+      "package": "com.bazenda.app",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET"
+      ],
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.bazenda.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Bazenda, ürün aramak için kameranızı kullanmanıza izin verir."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Bazenda, fotoğraf galerinizden ürün aramanıza izin verir."
+        }
+      ]
+    ],
+    "extra": {
+      "releaseChannel": "production",
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    },
+    "owner": "bazenda",
+    "privacy": "public",
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
     }
   }
 }

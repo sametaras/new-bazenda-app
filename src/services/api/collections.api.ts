@@ -1,7 +1,6 @@
 // src/services/api/collections.api.ts
 import axios from 'axios';
-
-const API_BASE_URL = 'https://bazenda.com/api';
+import ENV_CONFIG from '../../config/env.config';
 
 interface CreateCollectionResponse {
   status: boolean;
@@ -16,7 +15,7 @@ export class CollectionsAPI {
   static async createCollection(productIds: string[]): Promise<CreateCollectionResponse> {
     try {
       const response = await axios.post<CreateCollectionResponse>(
-        `${API_BASE_URL}/create_collection`,
+        `${ENV_CONFIG.apiUrl}/create_collection`,
         `products=${JSON.stringify(productIds)}`,
         {
           headers: {
@@ -45,7 +44,7 @@ export class CollectionsAPI {
   static async getCollectionProducts(collectionKey: string) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/get_collection_products`,
+        `${ENV_CONFIG.apiUrl}/get_collection_products`,
         `the_collection=${collectionKey}`,
         {
           headers: {

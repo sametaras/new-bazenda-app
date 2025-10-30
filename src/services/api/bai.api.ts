@@ -1,8 +1,7 @@
 // src/services/api/bai.api.ts - PRODUCTION READY
 import * as ImageManipulator from 'expo-image-manipulator';
 import { BAISearchRequest, BAISearchResponse, SearchFilters, Product } from '../../types';
-
-const API_BASE_URL = 'https://bazenda.com/api';
+import ENV_CONFIG from '../../config/env.config';
 
 export class BAIService {
   /**
@@ -32,7 +31,7 @@ export class BAIService {
       }
 
       // API isteği
-      const response = await fetch(`${API_BASE_URL}/get_results`, {
+      const response = await fetch(`${ENV_CONFIG.apiUrl}/get_results`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -83,7 +82,7 @@ export class BAIService {
   ): Promise<BAISearchResponse> {
     try {
       // 1. Önce raw image'ı al
-      const rawImageResponse = await fetch(`${API_BASE_URL}/get_raw_image`, {
+      const rawImageResponse = await fetch(`${ENV_CONFIG.apiUrl}/get_raw_image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -130,7 +129,7 @@ export class BAIService {
 
       console.log('Form data hazırlandı, API isteği gönderiliyor...');
 
-      const searchResponse = await fetch(`${API_BASE_URL}/get_results`, {
+      const searchResponse = await fetch(`${ENV_CONFIG.apiUrl}/get_results`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -259,7 +258,7 @@ export class BAIService {
    */
   static async getRawImage(productId: string): Promise<string | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/get_raw_image`, {
+      const response = await fetch(`${ENV_CONFIG.apiUrl}/get_raw_image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

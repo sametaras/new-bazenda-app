@@ -1,16 +1,49 @@
 // src/services/api/products.api.ts
 import axios from 'axios';
 import { Product } from '../../types';
-
-const API_BASE_URL = 'https://bazenda.com/api';
+import ENV_CONFIG from '../../config/env.config';
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 15000,
+  baseURL: ENV_CONFIG.apiUrl,
+  timeout: ENV_CONFIG.timeout,
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded',
   },
 });
+
+// Request interceptor - error handling ve logging
+apiClient.interceptors.request.use(
+  (config) => {
+    if (ENV_CONFIG.debugMode) {
+      console.log('📤 API Request:', config.method?.toUpperCase(), config.url);
+    }
+    return config;
+  },
+  (error) => {
+    console.error('❌ Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor - error handling
+apiClient.interceptors.response.use(
+  (response) => {
+    if (ENV_CONFIG.debugMode) {
+      console.log('📥 API Response:', response.config.url, response.status);
+    }
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      console.error('❌ Response Error:', error.response.status, error.response.data);
+    } else if (error.request) {
+      console.error('❌ Network Error: No response received');
+    } else {
+      console.error('❌ Request Setup Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export class ProductsService {
   /**

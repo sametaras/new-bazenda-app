@@ -20,7 +20,7 @@ export interface FavoriteProduct {
 }
 
 interface FavoritesStore {
-  favorites: Map<string, FavoriteProduct>;
+  favorites: Record<string, FavoriteProduct>;
 
   // Favori ekleme/çıkarma
   addFavorite: (product: Product) => void;
@@ -43,14 +43,14 @@ interface FavoritesStore {
 export const useFavorites = create<FavoritesStore>()(
   persist(
     (set, get) => ({
-      favorites: new Map<string, FavoriteProduct>(),
+      favorites: {},
 
       addFavorite: (product: Product) => {
         const currentPrice = parseFloat(product.price.replace(/[^0-9.-]/g, ''));
 
         set((state) => {
-          const newFavorites = new Map(state.favorites);
-          newFavorites.set(product.product_id, {
+          const newFavorites = { ...state.favorites };
+          newFavorites[product.product_id] = {
             product,
             addedAt: Date.now(),
             lastCheckedPrice: currentPrice,
@@ -60,22 +60,22 @@ export const useFavorites = create<FavoritesStore>()(
               timestamp: Date.now()
             }],
             priceChanged: false,
-          });
+          };
           return { favorites: newFavorites };
         });
       },
 
       removeFavorite: (productId: string) => {
         set((state) => {
-          const newFavorites = new Map(state.favorites);
-          newFavorites.delete(productId);
+          const newFavorites = { ...state.favorites };
+          delete newFavorites[productId];
           return { favorites: newFavorites };
         });
       },
 
       toggleFavorite: (product: Product) => {
         const state = get();
-        if (state.favorites.has(product.product_id)) {
+        if (product.product_id in state.favorites) {
           state.removeFavorite(product.product_id);
         } else {
           state.addFavorite(product);
@@ -83,27 +83,27 @@ export const useFavorites = create<FavoritesStore>()(
       },
 
       isFavorite: (productId: string) => {
-        return get().favorites.has(productId);
+        return productId in get().favorites;
       },
 
       getFavorite: (productId: string) => {
-        return get().favorites.get(productId);
+        return get().favorites[productId];
       },
 
       getAllFavorites: () => {
-        return Array.from(get().favorites.values());
+        return Object.values(get().favorites);
       },
 
       updateProductPrice: (productId: string, newPrice: number) => {
         set((state) => {
-          const favorite = state.favorites.get(productId);
+          const favorite = state.favorites[productId];
           if (!favorite) return state;
 
           const priceChange = newPrice - favorite.lastCheckedPrice;
           const priceChangePercentage = ((priceChange / favorite.lastCheckedPrice) * 100);
 
-          const newFavorites = new Map(state.favorites);
-          newFavorites.set(productId, {
+          const newFavorites = { ...state.favorites };
+          newFavorites[productId] = {
             ...favorite,
             lastCheckedPrice: newPrice,
             priceHistory: [
@@ -117,7 +117,7 @@ export const useFavorites = create<FavoritesStore>()(
             priceChangeAmount: priceChange,
             priceChangePercentage,
             notificationSent: false,
-          });
+          };
 
           return { favorites: newFavorites };
         });
@@ -125,14 +125,14 @@ export const useFavorites = create<FavoritesStore>()(
 
       markNotificationSent: (productId: string) => {
         set((state) => {
-          const favorite = state.favorites.get(productId);
+          const favorite = state.favorites[productId];
           if (!favorite) return state;
 
-          const newFavorites = new Map(state.favorites);
-          newFavorites.set(productId, {
+          const newFavorites = { ...state.favorites };
+          newFavorites[productId] = {
             ...favorite,
             notificationSent: true,
-          });
+          };
 
           return { favorites: newFavorites };
         });
@@ -140,32 +140,32 @@ export const useFavorites = create<FavoritesStore>()(
 
       clearPriceChange: (productId: string) => {
         set((state) => {
-          const favorite = state.favorites.get(productId);
+          const favorite = state.favorites[productId];
           if (!favorite) return state;
 
-          const newFavorites = new Map(state.favorites);
-          newFavorites.set(productId, {
+          const newFavorites = { ...state.favorites };
+          newFavorites[productId] = {
             ...favorite,
             priceChanged: false,
             priceChangeAmount: undefined,
             priceChangePercentage: undefined,
             notificationSent: false,
-          });
+          };
 
           return { favorites: newFavorites };
         });
       },
 
       clearFavorites: () => {
-        set({ favorites: new Map() });
+        set({ favorites: {} });
       },
 
       getFavoriteCount: () => {
-        return get().favorites.size;
+        return Object.keys(get().favorites).length;
       },
     }),
     {
-      name: 'bazenda-favorites-v2',
+      name: 'bazenda-favorites-v3',
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

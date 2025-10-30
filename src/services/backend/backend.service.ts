@@ -1,0 +1,164 @@
+// src/services/backend/backend.service.ts - Backend Integration
+import axios from 'axios';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ENV_CONFIG from '../../config/env.config';
+
+const DEVICE_ID_KEY = 'bazenda_device_id';
+
+class BackendService {
+  private apiClient;
+  private deviceId: string | null = null;
+
+  constructor() {
+    this.apiClient = axios.create({
+      baseURL: ENV_CONFIG.apiUrl,
+      timeout: 15000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  /**
+   * Unique device ID oluştur veya al
+   */
+  async getDeviceId(): Promise<string> {
+    if (this.deviceId) {
+      return this.deviceId;
+    }
+
+    // Önce storage'dan dene
+    const stored = await AsyncStorage.getItem(DEVICE_ID_KEY);
+    if (stored) {
+      this.deviceId = stored;
+      return stored;
+    }
+
+    // Yeni ID oluştur
+    const newId = this.generateDeviceId();
+    await AsyncStorage.setItem(DEVICE_ID_KEY, newId);
+    this.deviceId = newId;
+
+    return newId;
+  }
+
+  /**
+   * Device ID oluştur
+   */
+  private generateDeviceId(): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 15);
+    const platform = Device.osName || 'unknown';
+
+    return `${platform}_${timestamp}_${random}`;
+  }
+
+  /**
+   * Cihazı kaydet / Token gönder
+   */
+  async registerDevice(expoPushToken: string): Promise<boolean> {
+    try {
+      const deviceId = await this.getDeviceId();
+      const platform = Device.osName?.toLowerCase() || 'unknown';
+      const appVersion = Constants.expoConfig?.version || '1.0.0';
+
+      const response = await this.apiClient.post('/notifications/register-device', {
+        device_id: deviceId,
+        expo_push_token: expoPushToken,
+        platform: platform === 'ios' || platform === 'android' ? platform : 'web',
+        app_version: appVersion,
+      });
+
+      console.log('✅ Device registered:', response.data);
+      return response.data.success;
+    } catch (error) {
+      console.error('❌ Device registration failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Cihazı deaktif et
+   */
+  async unregisterDevice(expoPushToken: string): Promise<boolean> {
+    try {
+      const deviceId = await this.getDeviceId();
+
+      const response = await this.apiClient.post('/notifications/unregister-device', {
+        device_id: deviceId,
+        expo_push_token: expoPushToken,
+      });
+
+      return response.data.success;
+    } catch (error) {
+      console.error('❌ Device unregistration failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Favorileri backend ile senkronize et
+   */
+  async syncFavorites(favorites: Array<{ product_id: string; current_price: number }>): Promise<boolean> {
+    try {
+      const deviceId = await this.getDeviceId();
+
+      const response = await this.apiClient.post('/notifications/sync-favorites', {
+        device_id: deviceId,
+        favorites: favorites.map(f => ({
+          product_id: f.product_id,
+          current_price: f.current_price,
+        })),
+      });
+
+      console.log('✅ Favorites synced:', response.data);
+      return response.data.success;
+    } catch (error) {
+      console.error('❌ Favorites sync failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Tek bir favoriye ekleme
+   */
+  async addFavoriteToBackend(productId: string, currentPrice: number): Promise<boolean> {
+    try {
+      const deviceId = await this.getDeviceId();
+
+      const response = await this.apiClient.post('/notifications/add-favorite', {
+        device_id: deviceId,
+        product_id: productId,
+        current_price: currentPrice,
+      });
+
+      return response.data.success;
+    } catch (error) {
+      console.error('❌ Add favorite to backend failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Favoriden çıkarma
+   */
+  async removeFavoriteFromBackend(productId: string): Promise<boolean> {
+    try {
+      const deviceId = await this.getDeviceId();
+
+      const response = await this.apiClient.post('/notifications/remove-favorite', {
+        device_id: deviceId,
+        product_id: productId,
+      });
+
+      return response.data.success;
+    } catch (error) {
+      console.error('❌ Remove favorite from backend failed:', error);
+      return false;
+    }
+  }
+}
+
+export default new BackendService();

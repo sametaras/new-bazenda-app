@@ -2,6 +2,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import BackendService from '../backend/backend.service';
 
 // Notification ayarları
 Notifications.setNotificationHandler({
@@ -56,6 +57,9 @@ class NotificationService {
       // Push token al
       const token = await this.getExpoPushToken();
       this.expoPushToken = token;
+
+      // Backend'e kaydet
+      await BackendService.registerDevice(token);
 
       console.log('✅ Notification servisi başlatıldı:', token);
       return token;

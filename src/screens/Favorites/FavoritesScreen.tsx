@@ -1,4 +1,4 @@
-// src/screens/Favorites/FavoritesScreen.tsx
+// src/screens/Favorites/FavoritesScreen.tsx - ENHANCED WITH PRICE TRACKING
 import React, { useState } from 'react';
 import {
   View,
@@ -12,50 +12,71 @@ import {
   Modal,
   ActivityIndicator,
   Linking,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
 import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, shadows } from '../../theme/theme';
 import { useFavorites } from '../../store/favoritesStore';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import CollectionsAPI from '../../services/api/collections.api';
+import PriceTrackerService from '../../services/priceTracker/priceTracker.service';
+import NotificationService from '../../services/notifications/notification.service';
 
 export default function FavoritesScreen() {
-  const { favorites, toggleFavorite, clearFavorites } = useFavorites();
-  const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);
+  const { getAllFavorites, getFavoriteCount, clearFavorites, clearPriceChange } = useFavorites();
+  const favoriteProducts = getAllFavorites();
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [collectionUrl, setCollectionUrl] = useState('');
 
-  React.useEffect(() => {
-    loadFavoriteProducts();
-  }, [favorites]);
+  // Fiyat değişikliği olan ürünleri filtrele
+  const priceChangedProducts = favoriteProducts.filter(f => f.priceChanged);
 
-  const loadFavoriteProducts = async () => {
-    if (favorites.length === 0) {
-      setFavoriteProducts([]);
-      return;
-    }
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
-      const response = await fetch('https://bazenda.com/api/get_favorites', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `products=${JSON.stringify(favorites)}`,
-      });
+      const result = await PriceTrackerService.checkNow();
 
-      const data = await response.json();
-      setFavoriteProducts(data);
+      if (result.changed > 0) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(
+          '🎉 Fiyat Değişiklikleri!',
+          `${result.changed} üründe fiyat değişikliği tespit edildi.`,
+          [{ text: 'Tamam' }]
+        );
+      } else {
+        Alert.alert(
+          'Güncel',
+          'Favori ürünlerinizde fiyat değişikliği yok.',
+          [{ text: 'Tamam' }]
+        );
+      }
     } catch (error) {
-      console.error('Load favorites error:', error);
+      console.error('Refresh error:', error);
+      Alert.alert('Hata', 'Fiyatlar kontrol edilemedi');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      await NotificationService.sendTestNotification();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Test', 'Test bildirimi gönderildi!');
+    } catch (error) {
+      Alert.alert('Hata', 'Bildirim gönderilemedi');
     }
   };
 
   const handleCreateCollection = async () => {
-    if (favorites.length === 0) {
+    if (getFavoriteCount() === 0) {
       Alert.alert('Uyarı', 'Favori listeniz boş');
       return;
     }
@@ -64,13 +85,15 @@ export default function FavoritesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      const response = await CollectionsAPI.createCollection(favorites);
+      // Product ID'lerini al
+      const productIds = favoriteProducts.map(f => f.product.product_id);
+      const response = await CollectionsAPI.createCollection(productIds);
 
       if (response.status && response.value) {
         const url = CollectionsAPI.getCollectionUrl(response.value);
         setCollectionUrl(url);
         setShowQRModal(true);
-        
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         Alert.alert('Hata', response.message || 'Koleksiyon oluşturulamadı');
@@ -122,22 +145,68 @@ export default function FavoritesScreen() {
     );
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Favorilerim</Text>
-        {favorites.length > 0 && (
-          <TouchableOpacity onPress={handleClearAll}>
-            <Text style={styles.clearAll}>Tümünü Sil</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+  const handleClearPriceChanges = () => {
+    priceChangedProducts.forEach(f => {
+      clearPriceChange(f.product.product_id);
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
 
-      {favorites.length > 0 && (
+  const renderHeader = () => (
+    <>
+      {/* Fiyat Değişiklikleri Banner */}
+      {priceChangedProducts.length > 0 && (
+        <View style={styles.priceChangeBanner}>
+          <LinearGradient
+            colors={[colors.success, colors.info]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.priceChangeBannerGradient}
+          >
+            <View style={styles.priceChangeBannerContent}>
+              <Ionicons name="trending-down" size={24} color={colors.white} />
+              <View style={styles.priceChangeBannerText}>
+                <Text style={styles.priceChangeBannerTitle}>
+                  Fiyat Değişiklikleri!
+                </Text>
+                <Text style={styles.priceChangeBannerSubtitle}>
+                  {priceChangedProducts.length} üründe fiyat değişti
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.clearPriceButton}
+                onPress={handleClearPriceChanges}
+              >
+                <Ionicons name="checkmark" size={20} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+      )}
+
+      {/* Actions */}
+      {getFavoriteCount() > 0 && (
         <View style={styles.actionsBar}>
-          <View style={styles.countBadge}>
-            <Ionicons name="heart" size={16} color={colors.error} />
-            <Text style={styles.countText}>{favorites.length} ürün</Text>
+          <View style={styles.leftActions}>
+            <View style={styles.countBadge}>
+              <Ionicons name="heart" size={16} color={colors.error} />
+              <Text style={styles.countText}>{getFavoriteCount()} ürün</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={handleRefresh}
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <>
+                  <Ionicons name="refresh" size={16} color={colors.primary} />
+                  <Text style={styles.refreshButtonText}>Fiyatları Güncelle</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -149,38 +218,89 @@ export default function FavoritesScreen() {
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
               <>
-                <Ionicons name="share-social" size={18} color={colors.white} />
-                <Text style={styles.createButtonText}>Koleksiyon Oluştur</Text>
+                <Ionicons name="share-social" size={16} color={colors.white} />
+                <Text style={styles.createButtonText}>Paylaş</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
       )}
+    </>
+  );
+
+  const renderProduct = ({ item }: { item: any }) => {
+    const priceChange = item.priceChangeAmount;
+    const isPriceDrop = priceChange && priceChange < 0;
+    const showPriceBadge = item.priceChanged;
+
+    return (
+      <View style={styles.productWrapper}>
+        {showPriceBadge && (
+          <View style={[
+            styles.priceChangeBadge,
+            isPriceDrop ? styles.priceDropBadge : styles.priceIncreaseBadge
+          ]}>
+            <Ionicons
+              name={isPriceDrop ? 'arrow-down' : 'arrow-up'}
+              size={10}
+              color={colors.white}
+            />
+            <Text style={styles.priceChangeBadgeText}>
+              {isPriceDrop ? '-' : '+'}{Math.abs(priceChange).toFixed(2)} ₺
+            </Text>
+          </View>
+        )}
+        <ProductCard
+          product={item.product}
+        />
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Favorilerim</Text>
+        <View style={styles.headerActions}>
+          {/* Test Notification Button (Development only) */}
+          {__DEV__ && (
+            <TouchableOpacity onPress={handleTestNotification} style={styles.headerButton}>
+              <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+          {getFavoriteCount() > 0 && (
+            <TouchableOpacity onPress={handleClearAll} style={styles.headerButton}>
+              <Text style={styles.clearAll}>Tümünü Sil</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
       {favoriteProducts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="heart-outline" size={64} color={colors.gray400} />
           <Text style={styles.emptyTitle}>Henüz favori ürün yok</Text>
           <Text style={styles.emptyText}>
-            Beğendiğiniz ürünleri favorilere ekleyin
+            Beğendiğiniz ürünleri favorilere ekleyin ve fiyat değişikliklerinden haberdar olun!
           </Text>
         </View>
       ) : (
         <FlatList
           data={favoriteProducts}
-          renderItem={({ item }) => (
-            <View style={styles.productWrapper}>
-              <ProductCard
-                product={item}
-                onFavoritePress={() => toggleFavorite(item.product_id)}
-                isFavorite={true}
-              />
-            </View>
-          )}
-          keyExtractor={(item) => item.product_id}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.product.product_id}
           numColumns={2}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={renderHeader()}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
         />
       )}
 
@@ -208,7 +328,7 @@ export default function FavoritesScreen() {
               QR kodu okutarak koleksiyona ulaşılabilir
             </Text>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.urlContainer}
               onPress={handleOpenCollection}
             >
@@ -244,15 +364,60 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.m,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray200,
+    backgroundColor: colors.white,
   },
   title: {
     ...typography.h3,
     color: colors.black,
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: spacing.s,
+  },
+  headerButton: {
+    padding: spacing.xs,
+  },
   clearAll: {
     ...typography.caption,
     color: colors.error,
     fontWeight: '600',
+  },
+  priceChangeBanner: {
+    marginHorizontal: spacing.m,
+    marginTop: spacing.m,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...shadows.medium,
+  },
+  priceChangeBannerGradient: {
+    padding: spacing.m,
+  },
+  priceChangeBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  priceChangeBannerText: {
+    flex: 1,
+    marginLeft: spacing.m,
+  },
+  priceChangeBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  priceChangeBannerSubtitle: {
+    fontSize: 12,
+    color: colors.white,
+    opacity: 0.9,
+    marginTop: 2,
+  },
+  clearPriceButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   actionsBar: {
     flexDirection: 'row',
@@ -260,7 +425,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.m,
     paddingVertical: spacing.m,
-    backgroundColor: colors.surface,
+  },
+  leftActions: {
+    flexDirection: 'row',
+    gap: spacing.s,
+    flex: 1,
   },
   countBadge: {
     flexDirection: 'row',
@@ -269,6 +438,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.m,
     paddingVertical: spacing.s,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.gray200,
   },
   countText: {
     ...typography.caption,
@@ -276,14 +447,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: spacing.xs,
   },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.s,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    gap: spacing.xs,
+  },
+  refreshButtonText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '600',
+  },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.l,
+    paddingHorizontal: spacing.m,
     paddingVertical: spacing.s,
     borderRadius: 20,
     gap: spacing.xs,
+    minWidth: 80,
+    justifyContent: 'center',
   },
   createButtonText: {
     ...typography.caption,
@@ -296,6 +485,31 @@ const styles = StyleSheet.create({
   productWrapper: {
     width: '50%',
     padding: spacing.s,
+    position: 'relative',
+  },
+  priceChangeBadge: {
+    position: 'absolute',
+    top: spacing.m,
+    left: spacing.m,
+    zIndex: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.s,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 2,
+    ...shadows.medium,
+  },
+  priceDropBadge: {
+    backgroundColor: colors.success,
+  },
+  priceIncreaseBadge: {
+    backgroundColor: colors.error,
+  },
+  priceChangeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.white,
   },
   emptyContainer: {
     flex: 1,

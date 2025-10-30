@@ -9,14 +9,19 @@ Bazenda, kullanıcılara yapay zeka destekli ürün arama, fiyat karşılaştır
 - **BAI (Bazenda AI)**: Görsel tabanlı yapay zeka ile ürün arama
 - **Filtreler**: Fiyat, marka, renk ve beden filtreleme
 
-### 💰 Fiyat Takibi
-- **Fiyat Geçmişi**: Ürünlerin fiyat değişimlerini görüntüleme
+### 💰 Fiyat Takibi (YENİ!)
+- **Otomatik Fiyat Takibi**: Favori ürünlerin fiyatları otomatik olarak kontrol edilir
+- **Anlık Bildirimler**: Fiyat değişikliklerinde push notification
+- **Fiyat Geçmişi**: Ürünlerin fiyat değişim grafiklerini görüntüleme
 - **Çoklu Mağaza**: Farklı e-ticaret platformlarından fiyat karşılaştırma
-- **İndirim Uyarıları**: Fiyat düşüşlerinde bildirim
+- **Arka Plan Kontrolü**: Uygulama kapalıyken bile fiyat kontrolü
+- **Akıllı Uyarılar**: Sadece önemli fiyat değişikliklerinde bildirim (fiyat düşüşü veya %5+ artış)
 
 ### ❤️ Kişisel Koleksiyonlar
-- **Favoriler**: Beğenilen ürünleri kaydetme
-- **Koleksiyonlar**: Ürünleri gruplandırma ve paylaşma
+- **Favoriler**: Beğenilen ürünleri kaydetme ve fiyat takibi
+- **Fiyat Değişiklik Badge'leri**: Fiyat değişen ürünler görsel olarak belirtilir
+- **Manuel Güncelleme**: Favori ürünlerin fiyatlarını manuel kontrol etme
+- **Koleksiyonlar**: Ürünleri gruplandırma ve QR kod ile paylaşma
 - **Arama Geçmişi**: Geçmiş aramaları tekrar kullanma
 
 ### 🎯 Radar
@@ -26,13 +31,15 @@ Bazenda, kullanıcılara yapay zeka destekli ürün arama, fiyat karşılaştır
 ## Teknoloji Stack
 
 - **Framework**: React Native + Expo
-- **State Management**: Zustand
+- **State Management**: Zustand (with persistence)
 - **Data Fetching**: TanStack Query (React Query)
 - **Navigation**: React Navigation v7
 - **Type Safety**: TypeScript (Strict Mode)
 - **Styling**: StyleSheet + Theme System
 - **Animations**: React Native Reanimated
 - **Images**: Expo Image + Image Manipulator
+- **Notifications**: Expo Notifications
+- **Background Tasks**: Expo Background Fetch + Task Manager
 - **Code Quality**: ESLint + Prettier
 
 ## Başlangıç

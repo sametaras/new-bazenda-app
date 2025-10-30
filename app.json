@@ -22,7 +22,11 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Bazenda, ürün aramak için kameranızı kullanmanıza izin verir.",
         "NSPhotoLibraryUsageDescription": "Bazenda, fotoğraf galerinizden ürün aramanıza izin verir.",
-        "NSPhotoLibraryAddUsageDescription": "Bazenda, bulunan ürünleri kaydetmenize izin verir."
+        "NSPhotoLibraryAddUsageDescription": "Bazenda, bulunan ürünleri kaydetmenize izin verir.",
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -41,7 +45,10 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "INTERNET"
+        "INTERNET",
+        "POST_NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "WAKE_LOCK"
       ],
       "playStoreUrl": "https://play.google.com/store/apps/details?id=com.bazenda.app"
     },
@@ -60,6 +67,16 @@
         "expo-image-picker",
         {
           "photosPermission": "Bazenda, fotoğraf galerinizden ürün aramanıza izin verir."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#f67310",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "Bazenda"
         }
       ]
     ],

@@ -45,7 +45,7 @@ export default function SearchResultsScreen() {
     genders: [] as string[],
   });
 
-  const { toggleFavorite, isFavorite } = useFavorites();
+  // Favoriler store artık ProductCard içinde kullanılıyor
 
   useEffect(() => {
     loadProducts();
@@ -55,7 +55,7 @@ export default function SearchResultsScreen() {
   useEffect(() => {
     if (loading) {
       const interval = setInterval(() => {
-        setLoadingMessageIndex((prev) => 
+        setLoadingMessageIndex((prev) =>
           prev < LOADING_MESSAGES.length - 1 ? prev + 1 : prev
         );
       }, 2000);
@@ -63,6 +63,7 @@ export default function SearchResultsScreen() {
     } else {
       setLoadingMessageIndex(0);
     }
+    return undefined;
   }, [loading]);
 
   const loadProducts = async (resetPage = true) => {
@@ -331,8 +332,6 @@ export default function SearchResultsScreen() {
             <View style={styles.productWrapper}>
               <ProductCard
                 product={item}
-                onFavoritePress={() => toggleFavorite(item.product_id)}
-                isFavorite={isFavorite(item.product_id)}
               />
             </View>
           )}

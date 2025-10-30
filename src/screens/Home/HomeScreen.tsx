@@ -64,7 +64,7 @@ export default function HomeScreen() {
   const [showPopularSearches, setShowPopularSearches] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   
-  const { toggleFavorite, isFavorite } = useFavorites();
+  // Favoriler store artık ProductCard içinde kullanılıyor
 
   const loadTrendProducts = async (page: number = 1) => {
     setIsLoadingTrends(true);
@@ -274,8 +274,6 @@ export default function HomeScreen() {
           <View style={styles.trendProductCard}>
             <ProductCard
               product={item}
-              onFavoritePress={() => toggleFavorite(item.product_id)}
-              isFavorite={isFavorite(item.product_id)}
             />
           </View>
         )}

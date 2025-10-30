@@ -12,13 +12,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, shadows } from '../../theme/theme';
 import { useCurrentSearch } from '../../store/baiStore';
-import { useFavorites } from '../../store/favoritesStore';
 import ProductCard from '../../components/ProductCard/ProductCard';
 
 export default function BAIResultsScreen() {
   const navigation = useNavigation();
   const currentSearch = useCurrentSearch();
-  const { toggleFavorite, isFavorite } = useFavorites();
 
   if (!currentSearch || currentSearch.results.length === 0) {
     return (
@@ -65,8 +63,6 @@ export default function BAIResultsScreen() {
           <View style={styles.productWrapper}>
             <ProductCard
               product={item}
-              onFavoritePress={() => toggleFavorite(item.product_id)}
-              isFavorite={isFavorite(item.product_id)}
             />
           </View>
         )}

@@ -17,6 +17,7 @@ import { colors, spacing, typography, shadows } from '../../theme/theme';
 import { Product } from '../../types';
 import PriceHistoryModal from '../PriceHistoryModal/PriceHistoryModal';
 import { useBaiStore } from '../../store/baiStore';
+import { useFavorites } from '../../store/favoritesStore';
 
 const LOADING_MESSAGES = [
   { title: 'BAI Analiz Ediyor...', subtitle: 'Görsel özellikler çıkarılıyor' },
@@ -29,26 +30,31 @@ const CARD_WIDTH = (SCREEN_WIDTH - spacing.m * 3) / 2;
 
 interface ProductCardProps {
   product: Product;
-  onFavoritePress: () => void;
-  isFavorite: boolean;
+  onFavoritePress?: () => void;
+  isFavorite?: boolean;
 }
 
 export default function ProductCard({
   product,
   onFavoritePress,
-  isFavorite,
+  isFavorite: isFavoriteProp,
 }: ProductCardProps) {
   const navigation = useNavigation();
   const { performProductSearch, isSearching } = useBaiStore();
+  const { toggleFavorite, isFavorite: checkIsFavorite } = useFavorites();
   const [showPriceHistory, setShowPriceHistory] = useState(false);
   const [showBAILoading, setShowBAILoading] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  
+
+  // Use prop if provided, otherwise check from store
+  const isFavorite = isFavoriteProp !== undefined
+    ? isFavoriteProp
+    : checkIsFavorite(product.product_id);
   // Loading mesajlarını döndür
   useEffect(() => {
     if (showBAILoading) {
       const interval = setInterval(() => {
-        setLoadingMessageIndex((prev) => 
+        setLoadingMessageIndex((prev) =>
           prev < LOADING_MESSAGES.length - 1 ? prev + 1 : prev
         );
       }, 1500);
@@ -56,11 +62,17 @@ export default function ProductCard({
     } else {
       setLoadingMessageIndex(0);
     }
+    return undefined;
+  }, [showBAILoading]);
   }, [showBAILoading]);
   
   const handleFavoritePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onFavoritePress();
+    if (onFavoritePress) {
+      onFavoritePress();
+    } else {
+      toggleFavorite(product);
+    }
   };
 
   const handleBAIPress = async () => {

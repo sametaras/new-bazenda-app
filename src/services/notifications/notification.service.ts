@@ -35,7 +35,10 @@ class NotificationService {
     try {
       // Sadece fiziksel cihazlarda çalışır
       if (!Device.isDevice) {
-        console.log('📱 Notifications sadece fiziksel cihazlarda çalışır');
+        console.warn('⚠️  SIMULATOR ALGILAN DI');
+        console.warn('⚠️  Push notification\'lar sadece fiziksel cihazlarda çalışır!');
+        console.warn('⚠️  Backend\'e cihaz kaydı yapılamayacak.');
+        console.warn('⚠️  Test etmek için gerçek iOS/Android cihaz kullanın.');
         return null;
       }
 

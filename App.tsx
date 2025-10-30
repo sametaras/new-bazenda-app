@@ -1,15 +1,13 @@
-// App.tsx - PRODUCTION READY WITH PRICE TRACKING
+// App.tsx - PRODUCTION READY WITH BACKEND PRICE TRACKING
 import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
-import { AppState, AppStateStatus } from 'react-native';
 import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import NotificationService from './src/services/notifications/notification.service';
-import PriceTrackerService from './src/services/priceTracker/priceTracker.service';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,7 +23,6 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
-  const appState = useRef<AppStateStatus>(AppState.currentState);
   const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
   const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
 
@@ -43,18 +40,21 @@ export default function App() {
     responseListener.current = NotificationService.addNotificationResponseListener(
       (response) => {
         console.log('👆 Bildirime tıklandı:', response);
-        // Burada kullanıcıyı ilgili ürün sayfasına yönlendirebilirsiniz
+
+        // Notification data'dan screen bilgisini al
+        const screen = response.notification.request.content.data?.screen;
+
+        if (screen === 'Favorites') {
+          console.log('🔗 Navigate to Favorites screen');
+          // TODO: Navigation ref ile Favorites ekranına yönlendir
+        }
       }
     );
-
-    // App state değişikliklerini dinle
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
       // Cleanup
       notificationListener.current?.remove();
       responseListener.current?.remove();
-      subscription.remove();
     };
   }, []);
 
@@ -62,29 +62,14 @@ export default function App() {
     try {
       console.log('🚀 Servisler başlatılıyor...');
 
-      // Notification servisini başlat
+      // Notification servisini başlat (Backend device kaydı burada yapılır)
       await NotificationService.initialize();
 
-      // Price tracker servisini başlat
-      await PriceTrackerService.initialize();
-
       console.log('✅ Tüm servisler başlatıldı');
+      console.log('ℹ️  Fiyat kontrolü backend cron job tarafından yapılıyor');
     } catch (error) {
       console.error('❌ Servis başlatma hatası:', error);
     }
-  };
-
-  const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    // Uygulama background'dan foreground'a geçtiğinde fiyatları kontrol et
-    if (
-      appState.current.match(/inactive|background/) &&
-      nextAppState === 'active'
-    ) {
-      console.log('📱 Uygulama aktif hale geldi, fiyatlar kontrol ediliyor...');
-      PriceTrackerService.checkNow().catch(console.error);
-    }
-
-    appState.current = nextAppState;
   };
 
   return (

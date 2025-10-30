@@ -1,4 +1,4 @@
-// src/screens/Favorites/FavoritesScreen.tsx - ENHANCED WITH PRICE TRACKING
+// src/screens/Favorites/FavoritesScreen.tsx - BACKEND MANAGED PRICE TRACKING
 import React, { useState } from 'react';
 import {
   View,
@@ -12,7 +12,6 @@ import {
   Modal,
   ActivityIndicator,
   Linking,
-  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,56 +21,25 @@ import { colors, typography, spacing, shadows } from '../../theme/theme';
 import { useFavorites } from '../../store/favoritesStore';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import CollectionsAPI from '../../services/api/collections.api';
-import PriceTrackerService from '../../services/priceTracker/priceTracker.service';
 import NotificationService from '../../services/notifications/notification.service';
 
 export default function FavoritesScreen() {
   const { getAllFavorites, getFavoriteCount, clearFavorites, clearPriceChange } = useFavorites();
   const favoriteProducts = getAllFavorites();
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [collectionUrl, setCollectionUrl] = useState('');
 
-  // Fiyat değişikliği olan ürünleri filtrele
+  // Fiyat değişikliği olan ürünleri filtrele (Backend cron job tarafından güncellenir)
   const priceChangedProducts = favoriteProducts.filter(f => f.priceChanged);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    try {
-      const result = await PriceTrackerService.checkNow();
-
-      if (result.changed > 0) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(
-          '🎉 Fiyat Değişiklikleri!',
-          `${result.changed} üründe fiyat değişikliği tespit edildi.`,
-          [{ text: 'Tamam' }]
-        );
-      } else {
-        Alert.alert(
-          'Güncel',
-          'Favori ürünlerinizde fiyat değişikliği yok.',
-          [{ text: 'Tamam' }]
-        );
-      }
-    } catch (error) {
-      console.error('Refresh error:', error);
-      Alert.alert('Hata', 'Fiyatlar kontrol edilemedi');
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   const handleTestNotification = async () => {
     try {
       await NotificationService.sendTestNotification();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Test', 'Test bildirimi gönderildi!');
+      Alert.alert('✅ Test', 'Test bildirimi gönderildi!\n\nNot: Bildirimler sadece fiziksel cihazlarda çalışır.');
     } catch (error) {
-      Alert.alert('Hata', 'Bildirim gönderilemedi');
+      Alert.alert('❌ Hata', 'Bildirim gönderilemedi. Simulator\'da bildirimler çalışmaz.');
     }
   };
 
@@ -187,26 +155,9 @@ export default function FavoritesScreen() {
       {/* Actions */}
       {getFavoriteCount() > 0 && (
         <View style={styles.actionsBar}>
-          <View style={styles.leftActions}>
-            <View style={styles.countBadge}>
-              <Ionicons name="heart" size={16} color={colors.error} />
-              <Text style={styles.countText}>{getFavoriteCount()} ürün</Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.refreshButton}
-              onPress={handleRefresh}
-              disabled={refreshing}
-            >
-              {refreshing ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <>
-                  <Ionicons name="refresh" size={16} color={colors.primary} />
-                  <Text style={styles.refreshButtonText}>Fiyatları Güncelle</Text>
-                </>
-              )}
-            </TouchableOpacity>
+          <View style={styles.countBadge}>
+            <Ionicons name="heart" size={16} color={colors.error} />
+            <Text style={styles.countText}>{getFavoriteCount()} ürün</Text>
           </View>
 
           <TouchableOpacity
@@ -219,7 +170,7 @@ export default function FavoritesScreen() {
             ) : (
               <>
                 <Ionicons name="share-social" size={16} color={colors.white} />
-                <Text style={styles.createButtonText}>Paylaş</Text>
+                <Text style={styles.createButtonText}>Koleksiyon Oluştur</Text>
               </>
             )}
           </TouchableOpacity>
@@ -293,14 +244,6 @@ export default function FavoritesScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={renderHeader()}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-            />
-          }
         />
       )}
 
@@ -426,11 +369,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.m,
     paddingVertical: spacing.m,
   },
-  leftActions: {
-    flexDirection: 'row',
-    gap: spacing.s,
-    flex: 1,
-  },
   countBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -446,22 +384,6 @@ const styles = StyleSheet.create({
     color: colors.black,
     fontWeight: '600',
     marginLeft: spacing.xs,
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    gap: spacing.xs,
-  },
-  refreshButtonText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
   },
   createButton: {
     flexDirection: 'row',

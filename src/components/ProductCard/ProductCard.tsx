@@ -135,8 +135,8 @@ export default function ProductCard({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       await Share.share({
-        message: `${product.product_title}\n\n${product.shop_name}\n${product.price} ₺\n\n${product.product_link}`,
-        url: product.product_link, // iOS için
+        message: `${product.product_title}\n\n${product.shop_name}\n${product.price} ₺\n\n${product.app_product_link}`,
+        url: product.app_product_link, // iOS için
         title: product.product_title,
       });
     } catch (error) {

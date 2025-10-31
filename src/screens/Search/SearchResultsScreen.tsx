@@ -70,12 +70,14 @@ export default function SearchResultsScreen() {
     return undefined;
   }, [loading]);
 
-  const loadProducts = async (resetPage = true) => {
+  const loadProducts = async (resetPage = true, customFilters?: any) => {
     if (loading) return;
 
     setLoading(true);
     try {
       const currentPage = resetPage ? 1 : page;
+      // Use custom filters if provided, otherwise use store filters
+      const filtersToUse = customFilters || filters;
 
       let result;
       if (query === 'radar') {
@@ -85,12 +87,12 @@ export default function SearchResultsScreen() {
       } else {
         // Pass advanced filters to API
         result = await ProductsService.searchProducts(query, currentPage, {
-          colors: filters.colors,
-          sizes: filters.sizes,
-          brands: filters.brands,
-          genders: filters.genders,
-          priceMin: filters.priceMin,
-          priceMax: filters.priceMax,
+          colors: filtersToUse.colors,
+          sizes: filtersToUse.sizes,
+          brands: filtersToUse.brands,
+          genders: filtersToUse.genders,
+          priceMin: filtersToUse.priceMin,
+          priceMax: filtersToUse.priceMax,
         });
       }
 
@@ -123,12 +125,11 @@ export default function SearchResultsScreen() {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = (appliedFilters: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Store güncellemesini bekle (async state update)
-    setTimeout(() => {
-      loadProducts(true);
-    }, 100);
+    console.log('🔍 Applying filters immediately:', appliedFilters);
+    // Pass filters directly - no async wait!
+    loadProducts(true, appliedFilters);
   };
 
   const getHeaderTitle = () => {

@@ -25,7 +25,7 @@ import * as Haptics from 'expo-haptics';
 interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
-  onApply: () => void;
+  onApply: (filters: any) => void; // Filtreleri direkt geçelim
 }
 
 export const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) => {
@@ -170,20 +170,28 @@ export const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onAp
       .filter(g => selectedGenders.includes(g.id))
       .map(g => g.text);
 
-    // Update store
+    // Update store (for persistence)
     setColors(selectedColors, colorLabels);
     setSizes(selectedSizes, sizeLabels);
     setBrands(selectedBrands, brandLabels);
     setGenders(selectedGenders, genderLabels);
     setPriceRange(priceMin || undefined, priceMax || undefined);
 
-    // Close modal first, then apply (ensures store is fully updated)
+    // Create filter object to pass immediately (no async wait)
+    const appliedFilters = {
+      colors: selectedColors,
+      sizes: selectedSizes,
+      brands: selectedBrands,
+      genders: selectedGenders,
+      priceMin: priceMin || undefined,
+      priceMax: priceMax || undefined,
+    };
+
+    // Close modal
     onClose();
 
-    // Apply filters after modal closes and store updates
-    setTimeout(() => {
-      onApply();
-    }, 50);
+    // Pass filters directly to parent (no timing issues!)
+    onApply(appliedFilters);
   };
 
   const handleClear = () => {

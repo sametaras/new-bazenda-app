@@ -1,6 +1,18 @@
 # 📱 Notifications API Documentation
 
+> **⚠️ ÖNEMLI:** Bu dokümantasyon **BACKEND PROJESİ** için hazırlanmıştır.
+> Bu mobil uygulama projesinde sadece referans amaçlıdır.
+> Backend ekibi bu dokümana göre PHP API'lerini ve database'i güncelleyecektir.
+
 Bildirimler sistemi - Kullanıcılar geçmiş bildirimlerini görebilir, tıklayıp ürüne gidebilir.
+
+## 🎯 Backend Ekibi Ne Yapacak?
+
+1. **Database:** `push_notifications` tablosunu oluştur (SQL aşağıda)
+2. **Model:** `app/Models/PushNotificationModel.php` ekle
+3. **Controller:** `app/Controllers/NApi/NotificationController.php`'ye 5 yeni metot ekle
+4. **Routes:** `app/Config/Routes.php`'ye yeni endpoint'leri ekle
+5. **Cron Job:** Mevcut fiyat kontrolü yapan script'i güncelle (bildirim göndermeden önce DB'ye kaydet)
 
 ---
 
@@ -444,6 +456,53 @@ public function markAllRead()
 }
 ```
 
+#### `deleteNotification()` - YENİ
+
+```php
+/**
+ * DELETE /api/notifications/delete-notification
+ * Bildirimi sil
+ */
+public function deleteNotification()
+{
+    $json = $this->request->getJSON(true);
+
+    if (!isset($json['notification_id']) || !isset($json['device_id'])) {
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'notification_id and device_id are required'
+        ])->setStatusCode(400);
+    }
+
+    try {
+        $notificationModel = new PushNotificationModel();
+
+        $deleted = $notificationModel->where('id', $json['notification_id'])
+                                     ->where('device_id', $json['device_id'])
+                                     ->delete();
+
+        if ($deleted) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Notification deleted'
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Notification not found'
+            ])->setStatusCode(404);
+        }
+
+    } catch (\Exception $e) {
+        log_message('error', 'Delete notification error: ' . $e->getMessage());
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Failed to delete notification'
+        ])->setStatusCode(500);
+    }
+}
+```
+
 ---
 
 ## 📝 Model: `PushNotificationModel.php`
@@ -558,10 +617,19 @@ $routes->group('api/notifications', ['namespace' => 'App\Controllers\NApi'], fun
 
 ## ⚙️ Cron Job Güncelleme
 
-`check-price-changes.php` dosyasını güncelleyin:
+**NOT:** Backend projesindeki mevcut cron job kodunu (fiyat kontrolü yapan scripti) güncellemeniz gerekiyor.
+
+### Değişiklik Nedir?
+
+Şu anda cron job muhtemelen bildirim gönderirken sadece Expo Push API'yi kullanıyordur. Artık **önce veritabanına kaydetmeli, sonra göndermelidir**.
+
+### Örnek Güncelleme:
+
+Mevcut cron job kodunuzda bildirim gönderen kısımda:
 
 ```php
-// Eski kod:
+// ❌ ESKİ YOL: Direkt Expo'ya gönderiyordunuz
+$expoPushService = new ExpoPushService();
 $expoPushService->sendPriceDropNotification(
     $device['expo_push_token'],
     $product['product_title'],
@@ -570,9 +638,38 @@ $expoPushService->sendPriceDropNotification(
     $product['product_id']
 );
 
-// Yeni kod:
+// ✅ YENİ YOL: Önce DB'ye kaydet, sonra gönder
+// sendNotification endpoint'ini kullan (yukarıdaki fonksiyon otomatik olarak önce DB'ye kaydeder)
+
+// Seçenek 1: Controller metodunu kullan
 $notificationController = new \App\Controllers\NApi\NotificationController();
-$notificationController->sendNotification([
+$request = new \CodeIgniter\HTTP\IncomingRequest(); // Mock request
+$notificationController->sendNotification();
+
+// VEYA Seçenek 2: HTTP request at (daha güvenli)
+$client = \Config\Services::curlrequest();
+$response = $client->post('http://localhost/api/notifications/send-notification', [
+    'json' => [
+        'device_id' => $device['device_id'],
+        'expo_push_token' => $device['expo_push_token'],
+        'title' => '🎉 Fiyat Düştü!',
+        'body' => "{$product['product_title']}\n{$priceDrop} ₺ düştü ({$percentage}%)",
+        'notification_type' => 'price_drop',
+        'product_id' => $product['product_id'],
+        'product_link' => $product['app_product_link'],
+        'old_price' => $oldPrice,
+        'new_price' => $newPrice,
+        'data' => [
+            'type' => 'price_drop',
+            'product_id' => $product['product_id'],
+            'screen' => 'Favorites'
+        ]
+    ]
+]);
+
+// VEYA Seçenek 3: Model'i direkt kullan (en basit)
+$notificationModel = new \App\Models\PushNotificationModel();
+$notificationId = $notificationModel->insert([
     'device_id' => $device['device_id'],
     'expo_push_token' => $device['expo_push_token'],
     'title' => '🎉 Fiyat Düştü!',
@@ -582,13 +679,26 @@ $notificationController->sendNotification([
     'product_link' => $product['app_product_link'],
     'old_price' => $oldPrice,
     'new_price' => $newPrice,
-    'data' => [
-        'type' => 'price_drop',
-        'product_id' => $product['product_id'],
-        'screen' => 'Favorites'
-    ]
+    'sent_at' => date('Y-m-d H:i:s'),
+    'status' => 'pending',
+]);
+
+// Sonra Expo'ya gönder
+$expoPushService = new ExpoPushService();
+$result = $expoPushService->sendPriceDropNotification(...);
+
+// Sonucu güncelle
+$notificationModel->update($notificationId, [
+    'status' => $result['success'] ? 'sent' : 'failed',
+    'expo_response' => json_encode($result),
 ]);
 ```
+
+### Hangi Yöntemi Kullanmalıyım?
+
+- **Seçenek 3 (Model direkt)** - En basit ve hızlı, cron job içinde kullanmak için ideal
+- **Seçenek 2 (HTTP)** - Daha güvenli, rate limiting varsa iyi
+- **Seçenek 1 (Controller)** - Karmaşık, önerilmez
 
 ---
 

@@ -97,7 +97,7 @@ export class ProductsService {
   }
 
   /**
-   * Metin araması
+   * Metin araması - Advanced Filters Support
    */
   static async searchProducts(
     query: string,
@@ -111,16 +111,45 @@ export class ProductsService {
       formData.append('sort_by', filters?.sortBy || '0');
       formData.append('search_type', 'text');
 
+      // Price filters
       if (filters?.priceMin) {
         formData.append('price_min', filters.priceMin.toString());
       } else {
         formData.append('price_min', '');
       }
-      
+
       if (filters?.priceMax) {
         formData.append('price_max', filters.priceMax.toString());
       } else {
         formData.append('price_max', '');
+      }
+
+      // Color filters (array)
+      if (filters?.colors && filters.colors.length > 0) {
+        filters.colors.forEach((colorId: string) => {
+          formData.append('color_select[]', colorId);
+        });
+      }
+
+      // Size filters (array)
+      if (filters?.sizes && filters.sizes.length > 0) {
+        filters.sizes.forEach((sizeId: string) => {
+          formData.append('size_select[]', sizeId);
+        });
+      }
+
+      // Brand filters (array)
+      if (filters?.brands && filters.brands.length > 0) {
+        filters.brands.forEach((brandId: string) => {
+          formData.append('brand_select[]', brandId);
+        });
+      }
+
+      // Gender filters (array)
+      if (filters?.genders && filters.genders.length > 0) {
+        filters.genders.forEach((genderId: number) => {
+          formData.append('gender_select[]', genderId.toString());
+        });
       }
 
       const response = await apiClient.post('/get_results', formData.toString());
@@ -131,7 +160,7 @@ export class ProductsService {
           totalCount: response.data.total_count || 0,
         };
       }
-      
+
       return { products: [], totalCount: 0 };
     } catch (error) {
       console.error('Search products error:', error);

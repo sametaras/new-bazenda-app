@@ -1,4 +1,4 @@
-// src/screens/Search/SearchResultsScreen.tsx - PRODUCTION READY
+// src/screens/Search/SearchResultsScreen.tsx - PRODUCTION READY WITH ADVANCED FILTERS
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -18,6 +18,8 @@ import { colors, spacing, typography, shadows } from '../../theme/theme';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import ProductsService from '../../services/api/products.api';
 import { useFavorites } from '../../store/favoritesStore';
+import { useFilterStore } from '../../store/filterStore';
+import { FilterModal } from '../../components/FilterModal/FilterModal';
 import * as Haptics from 'expo-haptics';
 
 const LOADING_MESSAGES = [
@@ -30,7 +32,7 @@ export default function SearchResultsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { query, title } = route.params as { query: string; title?: string };
-  
+
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -38,14 +40,16 @@ export default function SearchResultsScreen() {
   const [searchQuery, setSearchQuery] = useState(query);
   const [showFilters, setShowFilters] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  const [filters, setFilters] = useState({
-    sortBy: '0',
-    priceMin: '',
-    priceMax: '',
-    genders: [] as string[],
-  });
+
+  // Advanced filters from store
+  const { filters, getActiveFilterCount, loadFilters } = useFilterStore();
 
   // Favoriler store artık ProductCard içinde kullanılıyor
+
+  // Load saved filters on mount
+  useEffect(() => {
+    loadFilters();
+  }, []);
 
   useEffect(() => {
     loadProducts();
@@ -68,18 +72,26 @@ export default function SearchResultsScreen() {
 
   const loadProducts = async (resetPage = true) => {
     if (loading) return;
-    
+
     setLoading(true);
     try {
       const currentPage = resetPage ? 1 : page;
-      
+
       let result;
       if (query === 'radar') {
         result = { products: await ProductsService.getRadarProducts(), totalCount: 0 };
       } else if (query === 'trends') {
         result = { products: await ProductsService.getTrendProducts(currentPage), totalCount: 0 };
       } else {
-        result = await ProductsService.searchProducts(query, currentPage, filters);
+        // Pass advanced filters to API
+        result = await ProductsService.searchProducts(query, currentPage, {
+          colors: filters.colors,
+          sizes: filters.sizes,
+          brands: filters.brands,
+          genders: filters.genders,
+          priceMin: filters.priceMin,
+          priceMax: filters.priceMax,
+        });
       }
 
       if (resetPage) {
@@ -88,7 +100,7 @@ export default function SearchResultsScreen() {
       } else {
         setProducts(prev => [...prev, ...result.products]);
       }
-      
+
       setTotalCount(result.totalCount);
     } catch (error) {
       console.error('Search error:', error);
@@ -114,16 +126,6 @@ export default function SearchResultsScreen() {
   const applyFilters = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     loadProducts(true);
-    setShowFilters(false);
-  };
-
-  const toggleGender = (gender: string) => {
-    setFilters(prev => ({
-      ...prev,
-      genders: prev.genders.includes(gender)
-        ? prev.genders.filter(g => g !== gender)
-        : [...prev.genders, gender]
-    }));
   };
 
   const getHeaderTitle = () => {
@@ -164,144 +166,6 @@ export default function SearchResultsScreen() {
     </Modal>
   );
 
-  const renderFiltersModal = () => (
-    <Modal
-      visible={showFilters}
-      animationType="slide"
-      transparent
-      onRequestClose={() => setShowFilters(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.filtersModal}>
-          <View style={styles.filtersHeader}>
-            <Text style={styles.filtersTitle}>Filtreler</Text>
-            <TouchableOpacity onPress={() => setShowFilters(false)}>
-              <Ionicons name="close" size={24} color={colors.black} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Search Input */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Arama</Text>
-              <View style={styles.searchBar}>
-                <Ionicons name="search" size={16} color={colors.gray500} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Ara..."
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  onSubmitEditing={handleSearch}
-                />
-              </View>
-            </View>
-
-            {/* Gender Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Cinsiyet</Text>
-              <View style={styles.genderButtons}>
-                {['Kadın', 'Erkek', 'Unisex', 'Çocuk'].map((gender) => (
-                  <TouchableOpacity
-                    key={gender}
-                    style={[
-                      styles.genderButton,
-                      filters.genders.includes(gender) && styles.genderButtonActive
-                    ]}
-                    onPress={() => toggleGender(gender)}
-                  >
-                    <Text style={[
-                      styles.genderButtonText,
-                      filters.genders.includes(gender) && styles.genderButtonTextActive
-                    ]}>
-                      {gender}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Sort */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Sıralama</Text>
-              <View style={styles.sortButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.sortButton,
-                    filters.sortBy === '0' && styles.sortButtonActive
-                  ]}
-                  onPress={() => setFilters({ ...filters, sortBy: '0' })}
-                >
-                  <Text style={[
-                    styles.sortButtonText,
-                    filters.sortBy === '0' && styles.sortButtonTextActive
-                  ]}>
-                    Önerilen
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.sortButton,
-                    filters.sortBy === '2' && styles.sortButtonActive
-                  ]}
-                  onPress={() => setFilters({ ...filters, sortBy: '2' })}
-                >
-                  <Text style={[
-                    styles.sortButtonText,
-                    filters.sortBy === '2' && styles.sortButtonTextActive
-                  ]}>
-                    Düşük Fiyat
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.sortButton,
-                    filters.sortBy === '1' && styles.sortButtonActive
-                  ]}
-                  onPress={() => setFilters({ ...filters, sortBy: '1' })}
-                >
-                  <Text style={[
-                    styles.sortButtonText,
-                    filters.sortBy === '1' && styles.sortButtonTextActive
-                  ]}>
-                    Yüksek Fiyat
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Price Range */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Fiyat Aralığı</Text>
-              <View style={styles.priceInputs}>
-                <TextInput
-                  style={styles.priceInput}
-                  placeholder="Min"
-                  keyboardType="numeric"
-                  value={filters.priceMin}
-                  onChangeText={(text) => setFilters({ ...filters, priceMin: text })}
-                />
-                <Text style={styles.priceSeparator}>-</Text>
-                <TextInput
-                  style={styles.priceInput}
-                  placeholder="Max"
-                  keyboardType="numeric"
-                  value={filters.priceMax}
-                  onChangeText={(text) => setFilters({ ...filters, priceMax: text })}
-                />
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* Apply Button */}
-          <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
-            <Text style={styles.applyButtonText}>Filtreleri Uygula</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -317,13 +181,24 @@ export default function SearchResultsScreen() {
           )}
         </View>
         
-        <TouchableOpacity onPress={() => setShowFilters(true)}>
+        <TouchableOpacity onPress={() => setShowFilters(true)} style={styles.filterButton}>
           <Ionicons name="options-outline" size={24} color={colors.black} />
+          {getActiveFilterCount() > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{getActiveFilterCount()}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
       {renderLoadingModal()}
-      {renderFiltersModal()}
+
+      {/* Advanced Filters Modal */}
+      <FilterModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        onApply={applyFilters}
+      />
 
       {!loading || products.length > 0 ? (
         <FlatList
@@ -599,5 +474,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.white,
+  },
+  filterButton: {
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgeText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

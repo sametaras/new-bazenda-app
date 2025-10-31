@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ENV_CONFIG from '../../config/env.config';
+import { FilterResponse } from '../../types/filter.types';
 
 const DEVICE_ID_KEY = 'bazenda_device_id';
 
@@ -163,6 +164,51 @@ class BackendService {
     } catch (error) {
       console.error('❌ Remove favorite from backend failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get available colors (with search support)
+   */
+  async getColors(keywords: string = '', page: number = 1): Promise<FilterResponse> {
+    try {
+      const response = await this.apiClient.get('/get_colors', {
+        params: { keywords, page },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('❌ Get colors failed:', error);
+      return { results: [] };
+    }
+  }
+
+  /**
+   * Get available sizes (with search support)
+   */
+  async getSizes(keywords: string = '', page: number = 1): Promise<FilterResponse> {
+    try {
+      const response = await this.apiClient.get('/get_sizes', {
+        params: { keywords, page },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('❌ Get sizes failed:', error);
+      return { results: [] };
+    }
+  }
+
+  /**
+   * Get available brands (with search support)
+   */
+  async getBrands(keywords: string = '', page: number = 1): Promise<FilterResponse> {
+    try {
+      const response = await this.apiClient.get('/get_brands', {
+        params: { keywords, page },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('❌ Get brands failed:', error);
+      return { results: [] };
     }
   }
 }

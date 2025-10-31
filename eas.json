@@ -31,20 +31,20 @@
         "EXPO_PUBLIC_ENVIRONMENT": "staging"
       }
     },
-    "production": {
-      "ios": {
-        "buildConfiguration": "Release",
-        "simulator": false,
-        "autoIncrement": true
-      },
-      "android": {
-        "buildType": "aab",
-        "autoIncrement": true
-      },
-      "env": {
-        "EXPO_PUBLIC_ENVIRONMENT": "production"
-      }
-    }
+"production": {
+  "ios": {
+    "buildConfiguration": "Release",
+    "simulator": false,
+    "autoIncrement": true
+  },
+  "android": {
+    "buildType": "app-bundle",
+    "autoIncrement": true
+  },
+  "env": {
+    "EXPO_PUBLIC_ENVIRONMENT": "production"
+  }
+}
   },
   "submit": {
     "production": {

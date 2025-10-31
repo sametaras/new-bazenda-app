@@ -81,19 +81,9 @@
       ]
     ],
     "extra": {
-      "releaseChannel": "production",
-      "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      }
+      "releaseChannel": "production"
     },
     "owner": "bazenda",
-    "privacy": "public",
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID"
-    },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    }
+    "privacy": "public"
   }
 }

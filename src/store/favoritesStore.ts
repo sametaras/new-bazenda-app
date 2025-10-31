@@ -46,7 +46,9 @@ export const useFavorites = create<FavoritesStore>()(
       favorites: {},
 
       addFavorite: (product: Product) => {
-        const currentPrice = parseFloat(product.price.replace(/[^0-9.-]/g, ''));
+        // Fiyat kontrolü - undefined veya boş string durumunda varsayılan değer
+        const priceString = product.price || '0';
+        const currentPrice = parseFloat(priceString.replace(/[^0-9.-]/g, '')) || 0;
 
         set((state) => {
           const newFavorites = { ...state.favorites };

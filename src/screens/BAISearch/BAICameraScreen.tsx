@@ -115,55 +115,55 @@ export default function BAICameraScreen() {
         style={styles.camera}
         facing={facing}
         ref={cameraRef}
-      >
-<SafeAreaView style={styles.header}>
-  <TouchableOpacity
-    style={styles.closeButton}
-    onPress={() => navigation.goBack()}
-  >
-    <Ionicons name="close" size={28} color={colors.white} />
-  </TouchableOpacity>
-  
-  <Text style={styles.title}>BAI Arama</Text>
-  
-  <TouchableOpacity
-    style={styles.historyButton}
-    onPress={() => navigation.navigate('BAIHistory' as never)}
-  >
-    <Ionicons name="time" size={28} color={colors.white} />
-  </TouchableOpacity>
-</SafeAreaView>
+      />
 
-        <View style={styles.guideContainer}>
-          <View style={styles.guideFrame} />
-          <Text style={styles.guideText}>
-            Ürünü çerçeve içine alın
-          </Text>
-        </View>
+      <SafeAreaView style={styles.header}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="close" size={28} color={colors.white} />
+        </TouchableOpacity>
 
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={styles.galleryButton}
-            onPress={pickImage}
-            disabled={isSearching}
-          >
-            <Ionicons name="images" size={28} color={colors.white} />
-          </TouchableOpacity>
+        <Text style={styles.title}>BAI Arama</Text>
 
-          <TouchableOpacity
-            style={[
-              styles.captureButton,
-              isSearching && styles.captureButtonDisabled
-            ]}
-            onPress={takePicture}
-            disabled={isSearching}
-          >
-            <View style={styles.captureButtonInner} />
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => navigation.navigate('BAIHistory' as never)}
+        >
+          <Ionicons name="time" size={28} color={colors.white} />
+        </TouchableOpacity>
+      </SafeAreaView>
 
-          <View style={styles.placeholder} />
-        </View>
-      </CameraView>
+      <View style={styles.guideContainer}>
+        <View style={styles.guideFrame} />
+        <Text style={styles.guideText}>
+          Ürünü çerçeve içine alın
+        </Text>
+      </View>
+
+      <View style={styles.controls}>
+        <TouchableOpacity
+          style={styles.galleryButton}
+          onPress={pickImage}
+          disabled={isSearching}
+        >
+          <Ionicons name="images" size={28} color={colors.white} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.captureButton,
+            isSearching && styles.captureButtonDisabled
+          ]}
+          onPress={takePicture}
+          disabled={isSearching}
+        >
+          <View style={styles.captureButtonInner} />
+        </TouchableOpacity>
+
+        <View style={styles.placeholder} />
+      </View>
     </View>
   );
 }
@@ -175,13 +175,23 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.m,
     paddingTop: spacing.m,
+    zIndex: 10,
   },
   closeButton: {
     width: 40,
@@ -205,9 +215,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   guideContainer: {
-    flex: 1,
+    position: 'absolute',
+    top: '30%',
+    left: 0,
+    right: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 5,
   },
   guideFrame: {
     width: 280,
@@ -227,11 +241,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   controls: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
+    zIndex: 10,
   },
   galleryButton: {
     width: 56,

@@ -256,6 +256,45 @@ export const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onAp
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Gender Filter - EN ÖNEMLİ */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterTitle}>Cinsiyet</Text>
+            <View style={styles.chipContainer}>
+              {GENDERS.map(gender =>
+                renderGenderChip(
+                  gender.id,
+                  gender.text,
+                  selectedGenders.includes(gender.id),
+                  () => toggleGender(gender.id)
+                )
+              )}
+            </View>
+          </View>
+
+          {/* Price Range - ÇOK KULLANILAN */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterTitle}>Fiyat Aralığı</Text>
+            <View style={styles.priceContainer}>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="En Az"
+                placeholderTextColor={colors.gray400 || colors.gray500}
+                value={priceMin}
+                onChangeText={setPriceMin}
+                keyboardType="numeric"
+              />
+              <Text style={styles.priceSeparator}>-</Text>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="En Fazla"
+                placeholderTextColor={colors.gray400 || colors.gray500}
+                value={priceMax}
+                onChangeText={setPriceMax}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
           {/* Color Filter */}
           <View style={styles.filterSection}>
             <Text style={styles.filterTitle}>Renk</Text>
@@ -335,45 +374,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onAp
                 )}
               </View>
             )}
-          </View>
-
-          {/* Gender Filter */}
-          <View style={styles.filterSection}>
-            <Text style={styles.filterTitle}>Cinsiyet</Text>
-            <View style={styles.chipContainer}>
-              {GENDERS.map(gender =>
-                renderGenderChip(
-                  gender.id,
-                  gender.text,
-                  selectedGenders.includes(gender.id),
-                  () => toggleGender(gender.id)
-                )
-              )}
-            </View>
-          </View>
-
-          {/* Price Range */}
-          <View style={styles.filterSection}>
-            <Text style={styles.filterTitle}>Fiyat Aralığı</Text>
-            <View style={styles.priceContainer}>
-              <TextInput
-                style={styles.priceInput}
-                placeholder="En Az"
-                placeholderTextColor={colors.gray400 || colors.gray500}
-                value={priceMin}
-                onChangeText={setPriceMin}
-                keyboardType="numeric"
-              />
-              <Text style={styles.priceSeparator}>-</Text>
-              <TextInput
-                style={styles.priceInput}
-                placeholder="En Fazla"
-                placeholderTextColor={colors.gray400 || colors.gray500}
-                value={priceMax}
-                onChangeText={setPriceMax}
-                keyboardType="numeric"
-              />
-            </View>
           </View>
 
           {/* Stats */}

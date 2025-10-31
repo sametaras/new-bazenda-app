@@ -68,9 +68,12 @@ export default function ProductCard({
   
   const handleFavoritePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Hemen toggle et
     if (onFavoritePress) {
       onFavoritePress();
     } else {
+      // Product objesi ile toggle et
       toggleFavorite(product);
     }
   };
@@ -199,6 +202,13 @@ export default function ProductCard({
           <Text style={styles.productTitle} numberOfLines={2}>
             {product.product_title}
           </Text>
+
+          {/* Last Updated */}
+          {product.last_updated && (
+            <Text style={styles.lastUpdated} numberOfLines={1}>
+              {product.last_updated}
+            </Text>
+          )}
 
           <View style={styles.shopRow}>
             <Text style={styles.shopName} numberOfLines={1}>
@@ -394,6 +404,12 @@ const styles = StyleSheet.create({
     minHeight: 32,
     lineHeight: 16,
     fontWeight: '500',
+  },
+  lastUpdated: {
+    fontSize: 10,
+    color: colors.gray500,
+    marginBottom: spacing.xs,
+    fontStyle: 'italic',
   },
   shopRow: {
     flexDirection: 'row',

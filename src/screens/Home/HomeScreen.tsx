@@ -279,8 +279,7 @@ export default function HomeScreen() {
           <View style={styles.trendProductCard}>
             <ProductCard
               product={item}
-              onFavoritePress={() => toggleFavorite(item.product_id)}
-              onBAIPress={handleBAIPress}
+              onFavoritePress={() => toggleFavorite(item)}
               isFavorite={isFavorite(item.product_id)}
             />
           </View>

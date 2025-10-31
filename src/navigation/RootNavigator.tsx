@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useFavorites } from '../store/favoritesStore';
 
 // Theme'den sadece colors import et
 const colors = {
@@ -46,6 +47,8 @@ function BAIStack() {
 }
 
 function MainTabs() {
+  const favoriteCount = useFavorites(state => state.getFavoriteCount());
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -104,6 +107,7 @@ function MainTabs() {
         component={FavoritesScreen}
         options={{
           tabBarLabel: 'Favorilerim',
+          tabBarBadge: favoriteCount > 0 ? favoriteCount : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart" size={size} color={color} />
           ),

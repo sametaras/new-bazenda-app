@@ -1,6 +1,6 @@
 // src/components/ProductCard/ProductCard.tsx - PRODUCTION READY
 import React, { useState, useEffect } from 'react';
-import { Linking, Alert, Modal, ActivityIndicator } from 'react-native';
+import { Linking, Alert, Modal, ActivityIndicator, Share } from 'react-native';
 import {
   View,
   Text,
@@ -130,6 +130,20 @@ export default function ProductCard({
     handleProductPress();
   };
 
+  const handleShare = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      await Share.share({
+        message: `${product.product_title}\n\n${product.shop_name}\n${product.price} ₺\n\n${product.product_link}`,
+        url: product.product_link, // iOS için
+        title: product.product_title,
+      });
+    } catch (error) {
+      console.error('Paylaşım hatası:', error);
+    }
+  };
+
   // İndirim miktarını kontrol et
   const hasDiscount = product.discount_amount && 
     product.discount_amount !== "0" && 
@@ -214,13 +228,22 @@ export default function ProductCard({
             <Text style={styles.shopName} numberOfLines={1}>
               {product.shop_name}
             </Text>
-            <TouchableOpacity 
-              style={styles.goButton}
-              onPress={handleGoPress}
-            >
-              <Text style={styles.goButtonText}>Git</Text>
-              <Ionicons name="arrow-forward" size={10} color={colors.primary} />
-            </TouchableOpacity>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={handleShare}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="share-outline" size={14} color={colors.gray600} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.goButton}
+                onPress={handleGoPress}
+              >
+                <Text style={styles.goButtonText}>Git</Text>
+                <Ionicons name="arrow-forward" size={10} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Price */}
@@ -416,6 +439,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  shareButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   shopName: {
     fontSize: 10,

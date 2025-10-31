@@ -619,86 +619,388 @@ $routes->group('api/notifications', ['namespace' => 'App\Controllers\NApi'], fun
 
 **NOT:** Backend projesindeki mevcut cron job kodunu (fiyat kontrolü yapan scripti) güncellemeniz gerekiyor.
 
-### Değişiklik Nedir?
+### Tam CronController.php Kodu (Referans)
 
-Şu anda cron job muhtemelen bildirim gönderirken sadece Expo Push API'yi kullanıyordur. Artık **önce veritabanına kaydetmeli, sonra göndermelidir**.
+Eğer backend projenizde henüz CronController yoksa, işte tam kod örneği:
 
-### Örnek Güncelleme:
-
-Mevcut cron job kodunuzda bildirim gönderen kısımda:
+**`app/Controllers/Api/CronController.php`**
 
 ```php
-// ❌ ESKİ YOL: Direkt Expo'ya gönderiyordunuz
-$expoPushService = new ExpoPushService();
-$expoPushService->sendPriceDropNotification(
-    $device['expo_push_token'],
-    $product['product_title'],
+<?php
+
+namespace App\Controllers\Api;
+
+use App\Controllers\BaseController;
+use App\Models\FavoritesTrackingModel;
+use App\Models\DeviceTokenModel;
+use App\Models\PriceChangeNotificationModel;
+use App\Models\PushNotificationModel;
+use App\Services\ExpoPushService;
+
+class CronController extends BaseController
+{
+    protected $favoritesModel;
+    protected $deviceTokenModel;
+    protected $notificationLogModel;
+    protected $pushNotificationModel;
+    protected $expoPushService;
+
+    public function __construct()
+    {
+        $this->favoritesModel = new FavoritesTrackingModel();
+        $this->deviceTokenModel = new DeviceTokenModel();
+        $this->notificationLogModel = new PriceChangeNotificationModel();
+        $this->pushNotificationModel = new PushNotificationModel();
+        $this->expoPushService = new ExpoPushService();
+    }
+
+    /**
+     * GET /api/cron/check-prices
+     * Fiyatları kontrol et ve bildirim gönder
+     *
+     * Cron: */15 * * * * (Her 15 dakikada bir)
+     * veya
+     * Cron: 0 * * * * (Her saat başı)
+     */
+    public function checkPrices()
+    {
+        // Güvenlik kontrolü - sadece localhost veya belirli IP'lerden
+        if (!$this->isAuthorizedCronRequest()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ])->setStatusCode(403);
+        }
+
+        $startTime = microtime(true);
+        $stats = [
+            'checked' => 0,
+            'price_changed' => 0,
+            'notifications_sent' => 0,
+            'errors' => 0
+        ];
+
+        try {
+            // Tüm aktif favorileri al
+            $favorites = $this->favoritesModel->getActiveFavorites();
+
+            foreach ($favorites as $favorite) {
+                $stats['checked']++;
+
+                try {
+                    // Güncel fiyatı API'den al (mevcut get_results endpoint'inizi kullanın)
+                    $currentPrice = $this->getCurrentProductPrice($favorite['product_id']);
+
+                    if ($currentPrice === null) {
+                        log_message('warning', "Price not found for product: {$favorite['product_id']}");
+                        continue;
+                    }
+
+                    $oldPrice = (float) $favorite['last_checked_price'];
+                    $priceDiff = $currentPrice - $oldPrice;
+                    $priceChangePercentage = ($priceDiff / $oldPrice) * 100;
+
+                    // Fiyat güncelle
+                    $this->favoritesModel->updatePrice($favorite['id'], $currentPrice);
+
+                    // Önemli değişiklik var mı kontrol et
+                    $shouldNotify = $this->shouldSendNotification(
+                        $oldPrice,
+                        $currentPrice,
+                        $favorite['last_notified_price'],
+                        (float) $favorite['price_change_threshold']
+                    );
+
+                    if ($shouldNotify) {
+                        $stats['price_changed']++;
+
+                        // Device token'ı al
+                        $deviceTokens = $this->deviceTokenModel->getActiveTokens([
+                            $favorite['device_id']
+                        ]);
+
+                        if (empty($deviceTokens)) {
+                            log_message('warning', "No active tokens for device: {$favorite['device_id']}");
+                            continue;
+                        }
+
+                        // Ürün bilgilerini al
+                        $product = $this->getProductDetails($favorite['product_id']);
+                        $productTitle = $product['product_title'] ?? 'Ürün';
+                        $productLink = $product['app_product_link'] ?? null;
+
+                        foreach ($deviceTokens as $token) {
+                            // ✅ YENİ: Önce DB'ye kaydet
+                            $notificationType = $priceDiff < 0 ? 'price_drop' : 'price_increase';
+                            $title = $priceDiff < 0 ? '🎉 Fiyat Düştü!' : '📈 Fiyat Değişikliği';
+                            $priceDiffAbs = abs($priceDiff);
+                            $percentage = round(abs($priceChangePercentage), 1);
+                            $body = "{$productTitle}\n{$priceDiffAbs} ₺ " .
+                                   ($priceDiff < 0 ? 'düştü' : 'arttı') .
+                                   " ({$percentage}%)";
+
+                            $notificationId = $this->pushNotificationModel->insert([
+                                'device_id' => $favorite['device_id'],
+                                'expo_push_token' => $token['expo_push_token'],
+                                'title' => $title,
+                                'body' => $body,
+                                'data' => json_encode([
+                                    'type' => $notificationType,
+                                    'product_id' => $favorite['product_id'],
+                                    'screen' => 'Favorites'
+                                ]),
+                                'notification_type' => $notificationType,
+                                'product_id' => $favorite['product_id'],
+                                'product_link' => $productLink,
+                                'old_price' => $oldPrice,
+                                'new_price' => $currentPrice,
+                                'sent_at' => date('Y-m-d H:i:s'),
+                                'status' => 'pending',
+                            ]);
+
+                            // Sonra Expo'ya gönder
+                            $response = $priceDiff < 0
+                                ? $this->expoPushService->sendPriceDropNotification(
+                                    $token['expo_push_token'],
+                                    $productTitle,
+                                    $oldPrice,
+                                    $currentPrice,
+                                    $favorite['product_id']
+                                )
+                                : $this->expoPushService->sendPriceIncreaseNotification(
+                                    $token['expo_push_token'],
+                                    $productTitle,
+                                    $oldPrice,
+                                    $currentPrice,
+                                    $favorite['product_id']
+                                );
+
+                            // Sonucu güncelle
+                            $this->pushNotificationModel->update($notificationId, [
+                                'status' => $response['success'] ? 'sent' : 'failed',
+                                'expo_response' => json_encode($response),
+                            ]);
+
+                            // Eski log sistemi (price_change_notifications tablosu)
+                            $this->logNotification(
+                                $favorite['device_id'],
+                                $favorite['product_id'],
+                                $oldPrice,
+                                $currentPrice,
+                                $priceDiff,
+                                $priceChangePercentage,
+                                $response
+                            );
+
+                            if ($response['success']) {
+                                $stats['notifications_sent']++;
+
+                                // Son bildirim fiyatını güncelle
+                                $this->favoritesModel->markNotified($favorite['id'], $currentPrice);
+                            }
+                        }
+                    }
+
+                } catch (\Exception $e) {
+                    $stats['errors']++;
+                    log_message('error', "Error processing favorite {$favorite['id']}: " . $e->getMessage());
+                }
+
+                // Rate limiting - API'yi aşırı yüklememek için
+                usleep(100000); // 100ms bekle
+            }
+
+            $duration = round(microtime(true) - $startTime, 2);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'stats' => $stats,
+                'duration_seconds' => $duration,
+                'timestamp' => date('Y-m-d H:i:s')
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Cron job error: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'stats' => $stats
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Güncel ürün fiyatını al
+     */
+    private function getCurrentProductPrice(string $productId)
+    {
+        // Mevcut get_results API'nizi kullanın
+        // Örnek implementasyon:
+
+        $productsModel = new \App\Models\ProductsModel();
+        $product = $productsModel->where('product_id', $productId)->first();
+
+        if (!$product) {
+            return null;
+        }
+
+        // Fiyat string olabilir, temizle
+        $price = preg_replace('/[^0-9.]/', '', $product['price']);
+        return (float) $price;
+    }
+
+    /**
+     * Ürün detaylarını al
+     */
+    private function getProductDetails(string $productId)
+    {
+        $productsModel = new \App\Models\ProductsModel();
+        return $productsModel->where('product_id', $productId)->first();
+    }
+
+    /**
+     * Bildirim gönderilmeli mi?
+     */
+    private function shouldSendNotification(
+        float $oldPrice,
+        float $newPrice,
+        ?float $lastNotifiedPrice,
+        float $threshold = 5.0
+    ): bool {
+        // Fiyat değişmedi
+        if (abs($newPrice - $oldPrice) < 0.01) {
+            return false;
+        }
+
+        $priceDiff = $newPrice - $oldPrice;
+        $changePercentage = abs(($priceDiff / $oldPrice) * 100);
+
+        // Fiyat düşüşü - her zaman bildir
+        if ($priceDiff < 0) {
+            // Ama daha önce aynı fiyattan bildirim gönderdiyse tekrar gönderme
+            if ($lastNotifiedPrice && abs($newPrice - $lastNotifiedPrice) < 0.01) {
+                return false;
+            }
+            return true;
+        }
+
+        // Fiyat artışı - sadece threshold'u geçerse
+        if ($changePercentage >= $threshold) {
+            if ($lastNotifiedPrice && abs($newPrice - $lastNotifiedPrice) < 0.01) {
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Bildirimi logla (eski sistem için - price_change_notifications tablosu)
+     */
+    private function logNotification(
+        string $deviceId,
+        string $productId,
+        float $oldPrice,
+        float $newPrice,
+        float $priceDiff,
+        float $percentage,
+        array $response
+    ) {
+        $this->notificationLogModel->insert([
+            'device_id' => $deviceId,
+            'product_id' => $productId,
+            'old_price' => $oldPrice,
+            'new_price' => $newPrice,
+            'price_change' => $priceDiff,
+            'price_change_percentage' => $percentage,
+            'notification_type' => $priceDiff < 0 ? 'price_drop' : 'price_increase',
+            'expo_push_response' => json_encode($response),
+            'is_delivered' => $response['success'] ? 1 : 0
+        ]);
+    }
+
+    /**
+     * Cron isteği yetkili mi?
+     */
+    private function isAuthorizedCronRequest(): bool
+    {
+        // Localhost kontrolü
+        $allowedIps = ['127.0.0.1', '::1', 'localhost'];
+
+        // Kendi sunucu IP'nizi ekleyin
+        $allowedIps[] = $_SERVER['SERVER_ADDR'] ?? '';
+
+        // Veya secret key kontrolü
+        $secretKey = $this->request->getHeaderLine('X-Cron-Secret');
+        $validSecret = env('CRON_SECRET_KEY', 'your-secret-key-here');
+
+        return in_array($_SERVER['REMOTE_ADDR'], $allowedIps) || $secretKey === $validSecret;
+    }
+}
+```
+
+### Crontab Kurulumu
+
+Sunucunuzda crontab'e ekleyin:
+
+```bash
+# Her 15 dakikada bir fiyat kontrolü
+*/15 * * * * curl -H "X-Cron-Secret: your-secret-key-here" https://bazenda.com/api/cron/check-prices
+
+# VEYA her saat başı
+0 * * * * curl -H "X-Cron-Secret: your-secret-key-here" https://bazenda.com/api/cron/check-prices
+```
+
+### Önemli Değişiklikler (Eski → Yeni)
+
+#### ❌ ESKİ YOL (Sadece Expo'ya gönderiyordu):
+```php
+// Bildirim gönder
+$response = $this->expoPushService->sendPriceDropNotification(
+    $token['expo_push_token'],
+    $productTitle,
     $oldPrice,
-    $newPrice,
-    $product['product_id']
+    $currentPrice,
+    $favorite['product_id']
 );
+```
 
-// ✅ YENİ YOL: Önce DB'ye kaydet, sonra gönder
-// sendNotification endpoint'ini kullan (yukarıdaki fonksiyon otomatik olarak önce DB'ye kaydeder)
-
-// Seçenek 1: Controller metodunu kullan
-$notificationController = new \App\Controllers\NApi\NotificationController();
-$request = new \CodeIgniter\HTTP\IncomingRequest(); // Mock request
-$notificationController->sendNotification();
-
-// VEYA Seçenek 2: HTTP request at (daha güvenli)
-$client = \Config\Services::curlrequest();
-$response = $client->post('http://localhost/api/notifications/send-notification', [
-    'json' => [
-        'device_id' => $device['device_id'],
-        'expo_push_token' => $device['expo_push_token'],
-        'title' => '🎉 Fiyat Düştü!',
-        'body' => "{$product['product_title']}\n{$priceDrop} ₺ düştü ({$percentage}%)",
-        'notification_type' => 'price_drop',
-        'product_id' => $product['product_id'],
-        'product_link' => $product['app_product_link'],
-        'old_price' => $oldPrice,
-        'new_price' => $newPrice,
-        'data' => [
-            'type' => 'price_drop',
-            'product_id' => $product['product_id'],
-            'screen' => 'Favorites'
-        ]
-    ]
-]);
-
-// VEYA Seçenek 3: Model'i direkt kullan (en basit)
-$notificationModel = new \App\Models\PushNotificationModel();
-$notificationId = $notificationModel->insert([
-    'device_id' => $device['device_id'],
-    'expo_push_token' => $device['expo_push_token'],
+#### ✅ YENİ YOL (Önce DB'ye kaydet, sonra gönder):
+```php
+// 1. Önce DB'ye kaydet
+$notificationId = $this->pushNotificationModel->insert([
+    'device_id' => $favorite['device_id'],
+    'expo_push_token' => $token['expo_push_token'],
     'title' => '🎉 Fiyat Düştü!',
-    'body' => "{$product['product_title']}\n{$priceDrop} ₺ düştü ({$percentage}%)",
+    'body' => "{$productTitle}\n...",
     'notification_type' => 'price_drop',
-    'product_id' => $product['product_id'],
-    'product_link' => $product['app_product_link'],
+    'product_id' => $favorite['product_id'],
+    'product_link' => $productLink,
     'old_price' => $oldPrice,
-    'new_price' => $newPrice,
+    'new_price' => $currentPrice,
     'sent_at' => date('Y-m-d H:i:s'),
     'status' => 'pending',
 ]);
 
-// Sonra Expo'ya gönder
-$expoPushService = new ExpoPushService();
-$result = $expoPushService->sendPriceDropNotification(...);
+// 2. Sonra Expo'ya gönder
+$response = $this->expoPushService->sendPriceDropNotification(...);
 
-// Sonucu güncelle
-$notificationModel->update($notificationId, [
-    'status' => $result['success'] ? 'sent' : 'failed',
-    'expo_response' => json_encode($result),
+// 3. Sonucu güncelle
+$this->pushNotificationModel->update($notificationId, [
+    'status' => $response['success'] ? 'sent' : 'failed',
+    'expo_response' => json_encode($response),
 ]);
 ```
 
-### Hangi Yöntemi Kullanmalıyım?
+### Avantajları
 
-- **Seçenek 3 (Model direkt)** - En basit ve hızlı, cron job içinde kullanmak için ideal
-- **Seçenek 2 (HTTP)** - Daha güvenli, rate limiting varsa iyi
-- **Seçenek 1 (Controller)** - Karmaşık, önerilmez
+1. ✅ Her bildirim veritabanında saklanır (geçmiş için)
+2. ✅ Kullanıcılar uygulamadan bildirim geçmişlerini görebilir
+3. ✅ Expo hatası olsa bile kayıt DB'de kalır
+4. ✅ Analytics ve raporlama için veri var
+5. ✅ Okundu/okunmadı takibi mümkün
 
 ---
 

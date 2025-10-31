@@ -5,6 +5,7 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ENV_CONFIG from '../../config/env.config';
 import { FilterResponse } from '../../types/filter.types';
+import { NotificationsResponse, PushNotification } from '../../types/notification.types';
 
 const DEVICE_ID_KEY = 'bazenda_device_id';
 
@@ -209,6 +210,92 @@ class BackendService {
     } catch (error) {
       console.error('❌ Get brands failed:', error);
       return { results: [] };
+    }
+  }
+
+  /**
+   * Get notifications for device
+   */
+  async getNotifications(limit: number = 50, offset: number = 0, unreadOnly: boolean = false): Promise<NotificationsResponse> {
+    try {
+      const deviceId = await this.getDeviceId();
+
+      const response = await this.apiClient.get('/notifications/get-notifications', {
+        params: {
+          device_id: deviceId,
+          limit,
+          offset,
+          unread_only: unreadOnly,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Get notifications failed:', error);
+      return {
+        success: false,
+        notifications: [],
+        total_count: 0,
+        unread_count: 0,
+      };
+    }
+  }
+
+  /**
+   * Mark notification as read
+   */
+  async markNotificationAsRead(notificationId: number): Promise<boolean> {
+    try {
+      const deviceId = await this.getDeviceId();
+
+      const response = await this.apiClient.post('/notifications/mark-as-read', {
+        notification_id: notificationId,
+        device_id: deviceId,
+      });
+
+      return response.data.success;
+    } catch (error) {
+      console.error('❌ Mark as read failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Mark all notifications as read
+   */
+  async markAllNotificationsAsRead(): Promise<boolean> {
+    try {
+      const deviceId = await this.getDeviceId();
+
+      const response = await this.apiClient.post('/notifications/mark-all-read', {
+        device_id: deviceId,
+      });
+
+      return response.data.success;
+    } catch (error) {
+      console.error('❌ Mark all as read failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete notification
+   */
+  async deleteNotification(notificationId: number): Promise<boolean> {
+    try {
+      const deviceId = await this.getDeviceId();
+
+      const response = await this.apiClient.delete('/notifications/delete-notification', {
+        data: {
+          notification_id: notificationId,
+          device_id: deviceId,
+        },
+      });
+
+      return response.data.success;
+    } catch (error) {
+      console.error('❌ Delete notification failed:', error);
+      return false;
     }
   }
 }

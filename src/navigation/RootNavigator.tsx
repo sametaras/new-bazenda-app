@@ -1,10 +1,11 @@
 // src/navigation/RootNavigator.tsx - BAI TAB DİREKT KAMERA AÇAR
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../store/favoritesStore';
+import { useNotifications } from '../store/notificationsStore';
 
 // Theme'den sadece colors import et
 const colors = {
@@ -20,6 +21,7 @@ import BAICameraScreen from '../screens/BAISearch/BAICameraScreen';
 import BAIResultsScreen from '../screens/BAISearch/BAIResultsScreen';
 import BAIHistoryScreen from '../screens/BAISearch/BAIHistoryScreen';
 import FavoritesScreen from '../screens/Favorites/FavoritesScreen';
+import NotificationsScreen from '../screens/Notifications/NotificationsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -48,6 +50,12 @@ function BAIStack() {
 
 function MainTabs() {
   const favoriteCount = useFavorites(state => state.getFavoriteCount());
+  const { unreadCount, refreshUnreadCount } = useNotifications();
+
+  // Uygulama açıldığında okunmamış bildirim sayısını güncelle
+  useEffect(() => {
+    refreshUnreadCount();
+  }, []);
 
   return (
     <Tab.Navigator
@@ -110,6 +118,18 @@ function MainTabs() {
           tabBarBadge: favoriteCount > 0 ? favoriteCount : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="Bildirimler"
+        component={NotificationsScreen}
+        options={{
+          tabBarLabel: 'Bildirimler',
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="notifications" size={size} color={color} />
           ),
         }}
       />

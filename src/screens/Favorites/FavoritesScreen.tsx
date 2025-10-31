@@ -21,7 +21,6 @@ import { colors, typography, spacing, shadows } from '../../theme/theme';
 import { useFavorites } from '../../store/favoritesStore';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import CollectionsAPI from '../../services/api/collections.api';
-import NotificationService from '../../services/notifications/notification.service';
 
 export default function FavoritesScreen() {
   const { getAllFavorites, getFavoriteCount, clearFavorites, clearPriceChange } = useFavorites();
@@ -32,16 +31,6 @@ export default function FavoritesScreen() {
 
   // Fiyat değişikliği olan ürünleri filtrele (Backend cron job tarafından güncellenir)
   const priceChangedProducts = favoriteProducts.filter(f => f.priceChanged);
-
-  const handleTestNotification = async () => {
-    try {
-      await NotificationService.sendTestNotification();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('✅ Test', 'Test bildirimi gönderildi!\n\nNot: Bildirimler sadece fiziksel cihazlarda çalışır.');
-    } catch (error) {
-      Alert.alert('❌ Hata', 'Bildirim gönderilemedi. Simulator\'da bildirimler çalışmaz.');
-    }
-  };
 
   const handleCreateCollection = async () => {
     if (getFavoriteCount() === 0) {
@@ -213,12 +202,6 @@ export default function FavoritesScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Favorilerim</Text>
         <View style={styles.headerActions}>
-          {/* Test Notification Button (Development only) */}
-          {__DEV__ && (
-            <TouchableOpacity onPress={handleTestNotification} style={styles.headerButton}>
-              <Ionicons name="notifications-outline" size={20} color={colors.primary} />
-            </TouchableOpacity>
-          )}
           {getFavoriteCount() > 0 && (
             <TouchableOpacity onPress={handleClearAll} style={styles.headerButton}>
               <Text style={styles.clearAll}>Tümünü Sil</Text>

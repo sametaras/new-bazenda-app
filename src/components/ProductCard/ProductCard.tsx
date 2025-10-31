@@ -46,10 +46,16 @@ export default function ProductCard({
   const [showBAILoading, setShowBAILoading] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
+  // Optimistic update için local state
+  const [localIsFavorite, setLocalIsFavorite] = useState<boolean | null>(null);
+
   // Use prop if provided, otherwise check from store
-  const isFavorite = isFavoriteProp !== undefined
-    ? isFavoriteProp
-    : checkIsFavorite(product.product_id);
+  // Local state varsa onu kullan (optimistic update)
+  const isFavorite = localIsFavorite !== null
+    ? localIsFavorite
+    : (isFavoriteProp !== undefined
+      ? isFavoriteProp
+      : checkIsFavorite(product.product_id));
 
   // Loading mesajlarını döndür
   useEffect(() => {
@@ -69,13 +75,23 @@ export default function ProductCard({
   const handleFavoritePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    // Hemen toggle et
-    if (onFavoritePress) {
-      onFavoritePress();
-    } else {
-      // Product objesi ile toggle et
-      toggleFavorite(product);
-    }
+    // Optimistic update - HEMEN UI'ı güncelle!
+    const newFavoriteState = !isFavorite;
+    setLocalIsFavorite(newFavoriteState);
+
+    // Background'da store'u güncelle (persist async olabilir)
+    setTimeout(() => {
+      if (onFavoritePress) {
+        onFavoritePress();
+      } else {
+        toggleFavorite(product);
+      }
+
+      // Store güncellendikten sonra local state'i temizle
+      setTimeout(() => {
+        setLocalIsFavorite(null);
+      }, 500);
+    }, 0);
   };
 
   const handleBAIPress = async () => {

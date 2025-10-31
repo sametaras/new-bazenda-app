@@ -125,7 +125,10 @@ export default function SearchResultsScreen() {
 
   const applyFilters = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    loadProducts(true);
+    // Store güncellemesini bekle (async state update)
+    setTimeout(() => {
+      loadProducts(true);
+    }, 100);
   };
 
   const getHeaderTitle = () => {

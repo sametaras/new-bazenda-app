@@ -169,8 +169,9 @@ export default function HomeScreen() {
   };
 
   const handleApplyFilters = (appliedFilters: any) => {
-    AnalyticsService.logFilterUsage('home_filters', appliedFilters);
-    navigation.navigate('SearchResults', { 
+    // TODO: Add analytics when service is ready
+    console.log('🔍 Filters applied:', appliedFilters);
+    navigation.navigate('SearchResults', {
       query: searchQuery || 'all',
       filters: appliedFilters
     } as never);

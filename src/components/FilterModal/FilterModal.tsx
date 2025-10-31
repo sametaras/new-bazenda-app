@@ -177,8 +177,13 @@ export const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onAp
     setGenders(selectedGenders, genderLabels);
     setPriceRange(priceMin || undefined, priceMax || undefined);
 
-    onApply();
+    // Close modal first, then apply (ensures store is fully updated)
     onClose();
+
+    // Apply filters after modal closes and store updates
+    setTimeout(() => {
+      onApply();
+    }, 50);
   };
 
   const handleClear = () => {

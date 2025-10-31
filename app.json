@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Bazenda",
-    "slug": "bazenda-app",
-    "version": "1.0.0",
+    "name": "bazenda",
+    "slug": "bazenda",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -18,7 +18,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bazenda.app",
-      "buildNumber": "1",
+      "buildNumber": "3",
+      "icon": "./assets/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "Bazenda, ürün aramak için kameranızı kullanmanıza izin verir.",
         "NSPhotoLibraryUsageDescription": "Bazenda, fotoğraf galerinizden ürün aramanıza izin verir.",
@@ -37,18 +38,19 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "icon": "./assets/icon.png",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.bazenda.app",
-      "versionCode": 1,
+      "versionCode": 3,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "INTERNET",
-        "POST_NOTIFICATIONS",
-        "RECEIVE_BOOT_COMPLETED",
-        "WAKE_LOCK"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
       ],
       "playStoreUrl": "https://play.google.com/store/apps/details?id=com.bazenda.app"
     },
@@ -81,9 +83,12 @@
       ]
     ],
     "extra": {
-      "releaseChannel": "production"
+      "releaseChannel": "production",
+      "eas": {
+        "projectId": "ed304777-7a7c-4bcd-85c3-f74e7354fdb8"
+      }
     },
-    "owner": "bazenda",
+    "owner": "acodeinlife",
     "privacy": "public"
   }
 }

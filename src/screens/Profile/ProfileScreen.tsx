@@ -1,6 +1,7 @@
 // src/screens/Profile/ProfileScreen.tsx
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../theme/theme';
 
 export default function ProfileScreen() {

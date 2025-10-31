@@ -145,11 +145,16 @@ export default function ProductCard({
   };
 
   // İndirim miktarını kontrol et
-  const hasDiscount = product.discount_amount && 
-    product.discount_amount !== "0" && 
+  const hasDiscount = product.discount_amount &&
+    product.discount_amount !== "0" &&
     product.discount_amount !== "0.00" &&
     product.last_price &&
     parseFloat(product.discount_amount.replace(/,/g, '')) > 0;
+
+  // Image URI kontrolü - boşsa placeholder kullan
+  const imageUri = product.image_link && product.image_link.trim() !== ''
+    ? product.image_link
+    : 'https://via.placeholder.com/400x400/f5f5f5/cccccc?text=Görsel+Yok';
 
   return (
     <>
@@ -161,7 +166,7 @@ export default function ProductCard({
         {/* Image Container */}
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: product.image_link }}
+            source={{ uri: imageUri }}
             style={styles.image}
             resizeMode="cover"
           />

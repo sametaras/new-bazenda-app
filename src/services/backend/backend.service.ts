@@ -73,8 +73,14 @@ class BackendService {
 
       console.log('✅ Device registered:', response.data);
       return response.data.success;
-    } catch (error) {
-      console.error('❌ Device registration failed:', error);
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        console.warn('⚠️  Backend notification endpoint not found (404)');
+        console.warn('⚠️  Please check: https://bazenda.com/api/notifications/register-device');
+        console.warn('⚠️  Notification system will be disabled until backend is ready');
+      } else {
+        console.error('❌ Device registration failed:', error.message || error);
+      }
       return false;
     }
   }

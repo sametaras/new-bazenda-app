@@ -286,11 +286,9 @@ class BackendService {
     try {
       const deviceId = await this.getDeviceId();
 
-      const response = await this.apiClient.delete('/notifications/delete-notification', {
-        data: {
-          notification_id: notificationId,
-          device_id: deviceId,
-        },
+      const response = await this.apiClient.post('/notifications/delete-notification', {
+        notification_id: notificationId,
+        device_id: deviceId,
       });
 
       return response.data.success;

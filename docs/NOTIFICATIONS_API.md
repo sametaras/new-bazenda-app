@@ -326,7 +326,7 @@ Tüm bildirimleri okundu olarak işaretle
 
 ---
 
-### 5. **DELETE** `/api/notifications/delete-notification`
+### 5. **POST** `/api/notifications/delete-notification`
 
 Bildirimi sil
 
@@ -599,7 +599,7 @@ public function markAllRead()
 
 ```php
 /**
- * DELETE /api/notifications/delete-notification
+ * POST /api/notifications/delete-notification
  * Bildirimi sil
  */
 public function deleteNotification()
@@ -748,7 +748,7 @@ $routes->group('api/notifications', ['namespace' => 'App\Controllers\NApi'], fun
     $routes->get('get-notifications', 'NotificationController::getNotifications');
     $routes->post('mark-as-read', 'NotificationController::markAsRead');
     $routes->post('mark-all-read', 'NotificationController::markAllRead');
-    $routes->delete('delete-notification', 'NotificationController::deleteNotification');
+    $routes->post('delete-notification', 'NotificationController::deleteNotification');
 });
 ```
 
@@ -866,7 +866,7 @@ class CronController extends BaseController
                         // Ürün bilgilerini al
                         $product = $this->getProductDetails($favorite['product_id']);
                         $productTitle = $product['product_title'] ?? 'Ürün';
-                        $productLink = $product['app_product_link'] ?? null;
+                        $productLink = $product['product_link'] ?? null;
 
                         foreach ($deviceTokens as $token) {
                             // ✅ YENİ: Önce DB'ye kaydet

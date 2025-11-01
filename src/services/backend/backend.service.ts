@@ -114,6 +114,12 @@ class BackendService {
     try {
       const deviceId = await this.getDeviceId();
 
+      console.log('📤 Syncing favorites:', {
+        device_id: deviceId,
+        count: favorites.length,
+        favorites: favorites.slice(0, 3), // İlk 3'ü göster
+      });
+
       const response = await this.apiClient.post('/notifications/sync-favorites', {
         device_id: deviceId,
         favorites: favorites.map(f => ({
@@ -124,8 +130,12 @@ class BackendService {
 
       console.log('✅ Favorites synced:', response.data);
       return response.data.success;
-    } catch (error) {
-      console.error('❌ Favorites sync failed:', error);
+    } catch (error: any) {
+      console.error('❌ Favorites sync failed:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
       return false;
     }
   }
@@ -137,15 +147,28 @@ class BackendService {
     try {
       const deviceId = await this.getDeviceId();
 
+      console.log('📤 Adding favorite to backend:', {
+        device_id: deviceId,
+        product_id: productId,
+        current_price: currentPrice,
+      });
+
       const response = await this.apiClient.post('/notifications/add-favorite', {
         device_id: deviceId,
         product_id: productId,
         current_price: currentPrice,
       });
 
+      console.log('✅ Favorite added to backend:', response.data);
       return response.data.success;
-    } catch (error) {
-      console.error('❌ Add favorite to backend failed:', error);
+    } catch (error: any) {
+      console.error('❌ Add favorite to backend failed:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        product_id: productId,
+        price: currentPrice,
+      });
       return false;
     }
   }

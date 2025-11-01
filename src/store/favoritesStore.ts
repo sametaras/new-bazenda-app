@@ -48,8 +48,13 @@ export const useFavorites = create<FavoritesStore>()(
 
       addFavorite: (product: Product) => {
         // Fiyat kontrolü - undefined veya boş string durumunda varsayılan değer
-        const priceString = product.price || '0';
-        const currentPrice = parseFloat(priceString.replace(/[^0-9.-]/g, '')) || 0;
+        const priceString = product.price || product.save_price?.toString() || '0';
+        const currentPrice = parseFloat(priceString.toString().replace(/[^0-9.]/g, '')) || 0;
+
+        // ⚠️ Geçersiz fiyat kontrolü
+        if (isNaN(currentPrice) || currentPrice <= 0) {
+          console.warn('Invalid price for product:', product.product_id, 'price:', product.price);
+        }
 
         set((state) => {
           const newFavorites = { ...state.favorites };
@@ -68,8 +73,9 @@ export const useFavorites = create<FavoritesStore>()(
         });
 
         // ✅ Backend'e de bildir (arka planda, sessizce)
-        backendService.addFavoriteToBackend(product.product_id, currentPrice).catch(err => {
-          console.warn('Backend sync failed for addFavorite:', err);
+        const validPrice = currentPrice > 0 ? currentPrice : 1; // Backend'e 0 gönderme
+        backendService.addFavoriteToBackend(product.product_id, validPrice).catch(err => {
+          console.error('❌ Backend sync failed for addFavorite:', err.response?.data || err.message);
         });
       },
 
@@ -170,11 +176,19 @@ export const useFavorites = create<FavoritesStore>()(
       },
 
       clearFavorites: () => {
+        console.log('🗑️ Clearing all favorites...');
         set({ favorites: {} });
 
         // ✅ Backend'e de bildir (tüm favorileri temizle)
-        backendService.syncFavorites([]).catch(err => {
-          console.warn('Backend sync failed for clearFavorites:', err);
+        console.log('📤 Syncing empty favorites array to backend...');
+        backendService.syncFavorites([]).then(success => {
+          if (success) {
+            console.log('✅ Backend favorites cleared successfully');
+          } else {
+            console.warn('⚠️  Backend favorites clear returned false');
+          }
+        }).catch(err => {
+          console.error('❌ Backend sync failed for clearFavorites:', err.response?.data || err.message);
         });
       },
 

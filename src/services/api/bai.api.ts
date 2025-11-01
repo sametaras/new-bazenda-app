@@ -14,10 +14,16 @@ export class BAIService {
     try {
       // Form data oluştur
       const formData = new FormData();
-      
-      // Image'ı blob'a çevir
-      const imageBlob = await fetch(imageUri).then(res => res.blob());
-      formData.append('search_image', imageBlob, 'search.jpg');
+
+      // React Native için image object oluştur
+      // ⚠️ ÖNEMLI: React Native'de fetch().blob() çalışmaz!
+      // Direkt uri, type, name gönderilmeli
+      formData.append('search_image', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'search.jpg',
+      } as any);
+
       formData.append('search_type', 'visual');
       formData.append('page', '1');
       formData.append('sort_by', filters?.sortBy === 'price_asc' ? '2' : filters?.sortBy === 'price_desc' ? '1' : '0');
@@ -29,6 +35,8 @@ export class BAIService {
       if (filters?.priceMax) {
         formData.append('price_max', filters.priceMax.toString());
       }
+
+      console.log('BAI Search: Görsel yükleniyor...', imageUri);
 
       // API isteği
       const response = await fetch(`${ENV_CONFIG.apiUrl}/get_results`, {
@@ -45,6 +53,8 @@ export class BAIService {
 
       const data = await response.json();
 
+      console.log('BAI Search: API yanıtı alındı, success:', data.success);
+
       if (!data.success) {
         throw new Error(data.message || 'Arama başarısız');
       }
@@ -60,7 +70,7 @@ export class BAIService {
       };
     } catch (error) {
       console.error('BAI Search Error:', error);
-      
+
       return {
         success: false,
         results: [],
@@ -68,7 +78,7 @@ export class BAIService {
         current_count: 0,
         search_type: 'visual',
         error: error instanceof Error ? error.message : 'Bilinmeyen hata',
-        message: 'Arama sırasında bir hata oluştu. Lütfen tekrar deneyin.',
+        message: 'Görsel analiz edilemedi.',
       };
     }
   }

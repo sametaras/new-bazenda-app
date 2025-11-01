@@ -58,15 +58,32 @@ export default function NotificationsScreen() {
         await markAsRead(notification.id);
       }
 
-      // Ürün linkine git
+      // Ürün linkine git (varsayılan tarayıcıda aç)
       if (notification.product_link) {
-        const supported = await Linking.canOpenURL(notification.product_link);
-        if (supported) {
-          await Linking.openURL(notification.product_link);
+        const url = notification.product_link.trim();
+
+        // URL format kontrolü
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          console.warn('Invalid URL format:', url);
+          Alert.alert('Hata', 'Geçersiz ürün linki');
+          return;
         }
+
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          // Varsayılan tarayıcıda aç
+          await Linking.openURL(url);
+        } else {
+          console.warn('Cannot open URL:', url);
+          Alert.alert('Hata', 'Bu link açılamıyor');
+        }
+      } else {
+        console.warn('No product link in notification');
+        Alert.alert('Bilgi', 'Bu bildirimde ürün linki bulunmuyor');
       }
     } catch (error) {
       console.error('Bildirim açma hatası:', error);
+      Alert.alert('Hata', 'Ürün linki açılırken bir hata oluştu');
     }
   };
 
@@ -121,7 +138,16 @@ export default function NotificationsScreen() {
 
   const formatTimestamp = (timestamp: string) => {
     try {
-      return formatDistanceToNow(new Date(timestamp), {
+      // Backend UTC+3 (Istanbul) saatinde gönderiyor
+      // Eğer timezone bilgisi yoksa, direkt parse et
+      const date = new Date(timestamp);
+
+      // Geçersiz tarih kontrolü
+      if (isNaN(date.getTime())) {
+        return timestamp;
+      }
+
+      return formatDistanceToNow(date, {
         addSuffix: true,
         locale: tr,
       });

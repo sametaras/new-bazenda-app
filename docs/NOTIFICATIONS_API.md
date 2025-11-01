@@ -78,6 +78,90 @@ $this->response->setHeader('Content-Type', 'application/json; charset=utf-8');
 
 ---
 
+## ⏰ Timezone Ayarları (Istanbul / Turkey)
+
+### Sorun: "3 saat önce" Hatası
+
+Backend UTC saatinde kayıt yapıyorsa, mobil app'te "3 saat önce" gibi yanlış süreler görünür.
+
+### Çözüm: Istanbul Timezone
+
+**`app/Config/App.php`** dosyasında:
+
+```php
+<?php
+
+namespace Config;
+
+use CodeIgniter\Config\BaseConfig;
+
+class App extends BaseConfig
+{
+    // ...
+
+    /**
+     * Timezone - Türkiye için Istanbul
+     */
+    public string $appTimezone = 'Europe/Istanbul';  // ✅ Önemli!
+
+    // ...
+}
+```
+
+### Controller'larda Kullanım
+
+Tüm `date()` ve `strtotime()` çağrıları otomatik olarak Istanbul timezone'ı kullanır:
+
+```php
+// ✅ Artık Istanbul saatinde kaydedilir
+'sent_at' => date('Y-m-d H:i:s'),
+'created_at' => date('Y-m-d H:i:s'),
+'read_at' => date('Y-m-d H:i:s'),
+```
+
+### Database Timezone
+
+MySQL timezone ayarını da kontrol edin:
+
+```sql
+-- MySQL timezone ayarını kontrol et
+SELECT @@global.time_zone, @@session.time_zone;
+
+-- Eğer SYSTEM ise:
+SET GLOBAL time_zone = '+03:00';  -- Istanbul UTC+3
+SET SESSION time_zone = '+03:00';
+
+-- Veya my.cnf dosyasında:
+[mysqld]
+default-time-zone = '+03:00'
+```
+
+### Test
+
+```php
+// Test için endpoint
+public function testTimezone()
+{
+    $now = date('Y-m-d H:i:s');
+    $timezone = date_default_timezone_get();
+
+    return $this->response->setJSON([
+        'current_time' => $now,
+        'timezone' => $timezone,
+        'timestamp' => time(),
+    ]);
+}
+
+// Beklenen çıktı:
+// {
+//   "current_time": "2025-11-01 12:30:45",
+//   "timezone": "Europe/Istanbul",
+//   "timestamp": 1730458245
+// }
+```
+
+---
+
 ## 🗄️ Veritabanı Tablosu
 
 ### `push_notifications` Tablosu

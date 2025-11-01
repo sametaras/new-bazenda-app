@@ -1121,6 +1121,8 @@ $this->pushNotificationModel->update($notificationId, [
 
 **NOT:** Products tablosu zaten mevcut, bu model sadece CronController'da kullanılmak için.
 
+⚠️ **ÇOK ÖNEMLİ:** API `product_shadow` (UUID) döndürüyor, `id` değil!
+
 `app/Models/ProductsModel.php` oluşturun:
 
 ```php
@@ -1175,16 +1177,27 @@ class ProductsModel extends Model
     protected $afterDelete = [];
 
     /**
-     * Ürünü product_id ile bul
-     * NOT: Eğer product_id ayrı bir alan değilse, id kullanın
+     * ⚠️ ÇÖZÜM: Ürünü product_shadow (UUID) ile bul
+     *
+     * API product_shadow kullanıyor, bu yüzden:
+     * - Mobil app: product_id = "8a2b2799-8743-11f0-9f3b-07ee9626fa74" (UUID)
+     * - Products tablosu: product_shadow sütunu
+     *
+     * ❌ YANLIŞ: WHERE id = '8a2b2799-...' (UUID'yi id'ye eşlemeye çalışmak)
+     * ✅ DOĞRU:  WHERE product_shadow = '8a2b2799-...'
      */
     public function findByProductId(string $productId)
     {
-        // SEÇENEK 1: Eğer tabloda 'product_id' alanı varsa:
-        // return $this->where('product_id', $productId)->first();
+        // Product ID aslında product_shadow (UUID)
+        return $this->where('product_shadow', $productId)->first();
+    }
 
-        // SEÇENEK 2: Eğer 'id' alanı product_id olarak kullanılıyorsa:
-        return $this->find($productId);
+    /**
+     * Gerçek ID ile bul (integer)
+     */
+    public function findByRealId(int $id)
+    {
+        return $this->find($id);
     }
 
     /**
@@ -1218,77 +1231,55 @@ class ProductsModel extends Model
 }
 ```
 
-### ⚠️ ÖNEMLI NOT: product_id vs id
+### ⚠️ ÇÖZÜM AÇIKLAMASI
 
-Verdiğiniz tabloda **`id`** sütunu var ama **`product_id`** sütunu yok!
+**Sorun:**
+```
+Mobil app product_id: "8a2b2799-8743-11f0-9f3b-07ee9626fa74" (UUID)
+Backend WHERE id = "8a2b2799-8743-11f0-9f3b-07ee9626fa74" ❌ (YANLIŞ!)
 
-CronController'daki kod `product_id` kullanıyor ama tablo `id` kullanıyor. İki seçenek var:
+Sonuç: Yanlış ürünler eşleşiyor veya hiç eşleşmiyor!
+```
 
-**SEÇENEK 1: Tabloda aslında `product_id` sütunu var (gösterilmemiş)**
-
-Eğer tabloda gerçekten `product_id` sütunu varsa, yukarıdaki modelde:
+**Çözüm:**
 ```php
+// ✅ DOĞRU: product_shadow ile ara
 public function findByProductId(string $productId) {
-    return $this->where('product_id', $productId)->first();
+    return $this->where('product_shadow', $productId)->first();
 }
 ```
 
-**SEÇENEK 2: `id` sütunu product_id olarak kullanılıyor (muhtemelen bu)**
-
-Eğer `id` = `product_id` ise:
+**Örnek:**
 ```php
-public function findByProductId(string $productId) {
-    return $this->find($productId); // id'ye göre ara
+// Mobil app gönderir:
+product_id = "8a2b2799-8743-11f0-9f3b-07ee9626fa74"
+
+// Backend bulur:
+SELECT * FROM products
+WHERE product_shadow = '8a2b2799-8743-11f0-9f3b-07ee9626fa74'
+LIMIT 1;
+
+// Dönen ürün:
+{
+  "id": 2291047,
+  "product_title": "Lacivert Melanj Triko Yelek",
+  "product_shadow": "8a2b2799-8743-11f0-9f3b-07ee9626fa74",
+  "price": "699"
 }
 ```
+
+---
 
 ### 🔧 CronController Güncellemesi Gerekli
 
-CronController'da `getCurrentProductPrice` ve `getProductDetails` metodlarını güncelleyin:
-
-```php
-/**
- * Güncel ürün fiyatını al
- */
-private function getCurrentProductPrice(string $productId)
-{
-    $productsModel = new \App\Models\ProductsModel();
-
-    // SEÇENEK 1: Eğer tabloda product_id alanı varsa
-    // $product = $productsModel->where('product_id', $productId)->first();
-
-    // SEÇENEK 2: Eğer id alanı kullanılıyorsa (önerilen)
-    $product = $productsModel->find($productId);
-
-    if (!$product) {
-        return null;
-    }
-
-    // ProductsModel'deki helper metodunu kullan
-    return $productsModel->getCleanPrice($product);
-}
-
-/**
- * Ürün detaylarını al
- */
-private function getProductDetails(string $productId)
-{
-    $productsModel = new \App\Models\ProductsModel();
-
-    // SEÇENEK 1: Eğer tabloda product_id alanı varsa
-    // return $productsModel->where('product_id', $productId)->first();
-
-    // SEÇENEK 2: Eğer id alanı kullanılıyorsa (önerilen)
-    return $productsModel->find($productId);
-}
-```
-
-**Veya daha temiz kod için model metodunu kullanın:**
+CronController'da `getCurrentProductPrice` ve `getProductDetails` metodları **değişiklik gerektirmez** çünkü zaten `findByProductId()` kullanıyorlar:
 
 ```php
 private function getCurrentProductPrice(string $productId)
 {
     $productsModel = new \App\Models\ProductsModel();
+
+    // ✅ Bu artık doğru çalışacak (product_shadow ile arayacak)
     $product = $productsModel->findByProductId($productId);
 
     if (!$product) {
@@ -1301,9 +1292,13 @@ private function getCurrentProductPrice(string $productId)
 private function getProductDetails(string $productId)
 {
     $productsModel = new \App\Models\ProductsModel();
+
+    // ✅ Bu da doğru çalışacak
     return $productsModel->findByProductId($productId);
 }
 ```
+
+**Önemli:** `$productId` parametresi aslında `product_shadow` (UUID) değeridir!
 
 ---
 

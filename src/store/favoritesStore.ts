@@ -1,8 +1,9 @@
-// src/store/favoritesStore.ts - ENHANCED WITH PRICE TRACKING
+// src/store/favoritesStore.ts - ENHANCED WITH PRICE TRACKING + BACKEND SYNC
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from '../types';
+import backendService from '../services/backend/backend.service';
 
 export interface FavoriteProduct {
   product: Product;
@@ -65,6 +66,11 @@ export const useFavorites = create<FavoritesStore>()(
           };
           return { favorites: newFavorites };
         });
+
+        // ✅ Backend'e de bildir (arka planda, sessizce)
+        backendService.addFavoriteToBackend(product.product_id, currentPrice).catch(err => {
+          console.warn('Backend sync failed for addFavorite:', err);
+        });
       },
 
       removeFavorite: (productId: string) => {
@@ -72,6 +78,11 @@ export const useFavorites = create<FavoritesStore>()(
           const newFavorites = { ...state.favorites };
           delete newFavorites[productId];
           return { favorites: newFavorites };
+        });
+
+        // ✅ Backend'e de bildir (arka planda, sessizce)
+        backendService.removeFavoriteFromBackend(productId).catch(err => {
+          console.warn('Backend sync failed for removeFavorite:', err);
         });
       },
 
@@ -160,6 +171,11 @@ export const useFavorites = create<FavoritesStore>()(
 
       clearFavorites: () => {
         set({ favorites: {} });
+
+        // ✅ Backend'e de bildir (tüm favorileri temizle)
+        backendService.syncFavorites([]).catch(err => {
+          console.warn('Backend sync failed for clearFavorites:', err);
+        });
       },
 
       getFavoriteCount: () => {

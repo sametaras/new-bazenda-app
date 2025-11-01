@@ -23,6 +23,58 @@ Bildirimler sistemi - Kullanıcılar geçmiş bildirimlerini görebilir, tıklay
 - ✅ **Bildirime Tıklama**: Direkt ürün linkine gider
 - ✅ **Okundu İşaretleme**: Tıklayınca otomatik okundu olarak işaretlenir
 - ✅ **device_id Persistence**: Uygulama silinmedikçe değişmez
+- ✅ **Türkçe Karakter Desteği**: UTF-8 encoding ile Türkçe karakterler düzgün görünür
+
+---
+
+## 🔤 UTF-8 Encoding Ayarları (Türkçe Karakter Desteği)
+
+### Database Ayarları
+
+**push_notifications** tablosu oluştururken mutlaka `utf8mb4` charset kullanın:
+
+```sql
+CREATE TABLE `push_notifications` (
+  -- ... kolonlar
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### CodeIgniter Database Config
+
+`app/Config/Database.php` dosyasında:
+
+```php
+public array $default = [
+    'DSN'          => '',
+    'hostname'     => 'localhost',
+    'username'     => 'root',
+    'password'     => '',
+    'database'     => 'bazenda',
+    'DBDriver'     => 'MySQLi',
+    'DBPrefix'     => '',
+    'pConnect'     => false,
+    'DBDebug'      => true,
+    'charset'      => 'utf8mb4',  // ✅ Önemli!
+    'DBCollat'     => 'utf8mb4_unicode_ci',  // ✅ Önemli!
+    'swapPre'      => '',
+    'encrypt'      => false,
+    'compress'     => false,
+    'strictOn'     => false,
+    'failover'     => [],
+    'port'         => 3306,
+];
+```
+
+### Controller Response Headers
+
+Tüm notification endpoint'lerinde UTF-8 header ekleyin:
+
+```php
+// Her response'dan önce
+$this->response->setHeader('Content-Type', 'application/json; charset=utf-8');
+```
+
+**ÖRNEKTEKİ TÜM CONTROLLER METODLARINDA ZATEN EKLENMİŞTİR!**
 
 ---
 
@@ -318,6 +370,9 @@ public function getNotifications()
     }
 
     try {
+        // ✅ UTF-8 encoding için header ekle (Türkçe karakter desteği)
+        $this->response->setHeader('Content-Type', 'application/json; charset=utf-8');
+
         $notificationModel = new PushNotificationModel();
 
         $builder = $notificationModel->where('device_id', $deviceId);

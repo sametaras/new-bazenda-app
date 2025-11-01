@@ -1,6 +1,6 @@
 /**
  * Notifications Screen
- * Kullan1c1n1n ge�mi_ bildirimlerini g�sterir
+ * Kullanıcının geçmiş bildirimlerini gösterir
  */
 
 import React, { useEffect, useState } from 'react';
@@ -53,12 +53,12 @@ export default function NotificationsScreen() {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-      // Okunmam1_sa okundu i_aretle
+      // Okunmamışsa okundu işaretle
       if (notification.is_read === 0) {
         await markAsRead(notification.id);
       }
 
-      // �r�n linkine git
+      // Ürün linkine git
       if (notification.product_link) {
         const supported = await Linking.canOpenURL(notification.product_link);
         if (supported) {
@@ -66,7 +66,7 @@ export default function NotificationsScreen() {
         }
       }
     } catch (error) {
-      console.error('Bildirim a�ma hatas1:', error);
+      console.error('Bildirim açma hatası:', error);
     }
   };
 
@@ -76,12 +76,12 @@ export default function NotificationsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     Alert.alert(
-      'T�m�n� Okundu 0_aretle',
-      `${unreadCount} okunmam1_ bildirim okundu olarak i_aretlensin mi?`,
+      'Tümünü Okundu İşaretle',
+      `${unreadCount} okunmamış bildirim okundu olarak işaretlensin mi?`,
       [
-        { text: '0ptal', style: 'cancel' },
+        { text: 'İptal', style: 'cancel' },
         {
-          text: 'Okundu 0_aretle',
+          text: 'Okundu İşaretle',
           style: 'default',
           onPress: () => markAllAsRead(),
         },
@@ -94,9 +94,9 @@ export default function NotificationsScreen() {
 
     Alert.alert(
       'Bildirimi Sil',
-      'Bu bildirimi silmek istediinizden emin misiniz?',
+      'Bu bildirimi silmek istediğinizden emin misiniz?',
       [
-        { text: '0ptal', style: 'cancel' },
+        { text: 'İptal', style: 'cancel' },
         {
           text: 'Sil',
           style: 'destructive',
@@ -164,14 +164,14 @@ export default function NotificationsScreen() {
               item.old_price &&
               item.new_price && (
                 <View style={styles.priceInfo}>
-                  <Text style={styles.oldPrice}>{item.old_price} �</Text>
+                  <Text style={styles.oldPrice}>{item.old_price} ₺</Text>
                   <Ionicons
                     name="arrow-forward"
                     size={12}
                     color={colors.gray500}
                     style={{ marginHorizontal: 4 }}
                   />
-                  <Text style={[styles.newPrice, { color: icon.color }]}>{item.new_price} �</Text>
+                  <Text style={[styles.newPrice, { color: icon.color }]}>{item.new_price} ₺</Text>
                 </View>
               )}
 
@@ -195,7 +195,7 @@ export default function NotificationsScreen() {
     <View style={styles.emptyContainer}>
       <Ionicons name="notifications-off-outline" size={64} color={colors.gray400} />
       <Text style={styles.emptyTitle}>Bildirim Yok</Text>
-      <Text style={styles.emptyText}>Hen�z hi� bildiriminiz yok</Text>
+      <Text style={styles.emptyText}>Henüz hiç bildiriminiz yok</Text>
     </View>
   );
 
@@ -205,11 +205,11 @@ export default function NotificationsScreen() {
     return (
       <View style={styles.headerContainer}>
         <Text style={styles.headerText}>
-          {totalCount} bildirim {unreadCount > 0 && `" ${unreadCount} okunmam1_`}
+          {totalCount} bildirim {unreadCount > 0 && `• ${unreadCount} okunmamış`}
         </Text>
         {unreadCount > 0 && (
           <TouchableOpacity onPress={handleMarkAllAsRead}>
-            <Text style={styles.markAllButton}>T�m�n� Okundu 0_aretle</Text>
+            <Text style={styles.markAllButton}>Tümünü Okundu İşaretle</Text>
           </TouchableOpacity>
         )}
       </View>

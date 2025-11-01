@@ -1004,6 +1004,196 @@ $this->pushNotificationModel->update($notificationId, [
 
 ---
 
+## 📝 Model: `ProductsModel.php`
+
+**NOT:** Products tablosu zaten mevcut, bu model sadece CronController'da kullanılmak için.
+
+`app/Models/ProductsModel.php` oluşturun:
+
+```php
+<?php
+
+namespace App\Models;
+
+use CodeIgniter\Model;
+
+class ProductsModel extends Model
+{
+    protected $table = 'products';
+    protected $primaryKey = 'id';
+    protected $useAutoIncrement = true;
+    protected $returnType = 'array';
+    protected $useSoftDeletes = false;
+    protected $protectFields = true;
+
+    protected $allowedFields = [
+        'product_title',
+        'image_link',
+        'shop_id',
+        'brand_id',
+        'price',
+        'save_price',
+        'product_link',
+        'last_updated',
+        'product_gender',
+        'product_shadow',
+        'history_count',
+        'non_bai',
+    ];
+
+    // Dates
+    protected $useTimestamps = false;
+
+    // Validation
+    protected $validationRules = [];
+    protected $validationMessages = [];
+    protected $skipValidation = false;
+    protected $cleanValidationRules = true;
+
+    // Callbacks
+    protected $allowCallbacks = true;
+    protected $beforeInsert = [];
+    protected $afterInsert = [];
+    protected $beforeUpdate = [];
+    protected $afterUpdate = [];
+    protected $beforeFind = [];
+    protected $afterFind = [];
+    protected $beforeDelete = [];
+    protected $afterDelete = [];
+
+    /**
+     * Ürünü product_id ile bul
+     * NOT: Eğer product_id ayrı bir alan değilse, id kullanın
+     */
+    public function findByProductId(string $productId)
+    {
+        // SEÇENEK 1: Eğer tabloda 'product_id' alanı varsa:
+        // return $this->where('product_id', $productId)->first();
+
+        // SEÇENEK 2: Eğer 'id' alanı product_id olarak kullanılıyorsa:
+        return $this->find($productId);
+    }
+
+    /**
+     * Fiyat string'ini temizleyip float döndür
+     */
+    public function getCleanPrice(array $product): float
+    {
+        if (!isset($product['price'])) {
+            return 0.0;
+        }
+
+        // "299,99 TL" veya "$299.99" gibi formatları temizle
+        $price = preg_replace('/[^0-9.,]/', '', $product['price']);
+
+        // Virgülü noktaya çevir (Türkçe format)
+        $price = str_replace(',', '.', $price);
+
+        return (float) $price;
+    }
+
+    /**
+     * Aktif ürünleri getir (non_bai=0)
+     */
+    public function getActiveProducts(int $limit = 100, int $offset = 0)
+    {
+        return $this->where('non_bai', 0)
+                    ->orderBy('last_updated', 'DESC')
+                    ->limit($limit, $offset)
+                    ->findAll();
+    }
+}
+```
+
+### ⚠️ ÖNEMLI NOT: product_id vs id
+
+Verdiğiniz tabloda **`id`** sütunu var ama **`product_id`** sütunu yok!
+
+CronController'daki kod `product_id` kullanıyor ama tablo `id` kullanıyor. İki seçenek var:
+
+**SEÇENEK 1: Tabloda aslında `product_id` sütunu var (gösterilmemiş)**
+
+Eğer tabloda gerçekten `product_id` sütunu varsa, yukarıdaki modelde:
+```php
+public function findByProductId(string $productId) {
+    return $this->where('product_id', $productId)->first();
+}
+```
+
+**SEÇENEK 2: `id` sütunu product_id olarak kullanılıyor (muhtemelen bu)**
+
+Eğer `id` = `product_id` ise:
+```php
+public function findByProductId(string $productId) {
+    return $this->find($productId); // id'ye göre ara
+}
+```
+
+### 🔧 CronController Güncellemesi Gerekli
+
+CronController'da `getCurrentProductPrice` ve `getProductDetails` metodlarını güncelleyin:
+
+```php
+/**
+ * Güncel ürün fiyatını al
+ */
+private function getCurrentProductPrice(string $productId)
+{
+    $productsModel = new \App\Models\ProductsModel();
+
+    // SEÇENEK 1: Eğer tabloda product_id alanı varsa
+    // $product = $productsModel->where('product_id', $productId)->first();
+
+    // SEÇENEK 2: Eğer id alanı kullanılıyorsa (önerilen)
+    $product = $productsModel->find($productId);
+
+    if (!$product) {
+        return null;
+    }
+
+    // ProductsModel'deki helper metodunu kullan
+    return $productsModel->getCleanPrice($product);
+}
+
+/**
+ * Ürün detaylarını al
+ */
+private function getProductDetails(string $productId)
+{
+    $productsModel = new \App\Models\ProductsModel();
+
+    // SEÇENEK 1: Eğer tabloda product_id alanı varsa
+    // return $productsModel->where('product_id', $productId)->first();
+
+    // SEÇENEK 2: Eğer id alanı kullanılıyorsa (önerilen)
+    return $productsModel->find($productId);
+}
+```
+
+**Veya daha temiz kod için model metodunu kullanın:**
+
+```php
+private function getCurrentProductPrice(string $productId)
+{
+    $productsModel = new \App\Models\ProductsModel();
+    $product = $productsModel->findByProductId($productId);
+
+    if (!$product) {
+        return null;
+    }
+
+    return $productsModel->getCleanPrice($product);
+}
+
+private function getProductDetails(string $productId)
+{
+    $productsModel = new \App\Models\ProductsModel();
+    return $productsModel->findByProductId($productId);
+}
+```
+
+---
+
 ## 🔐 Device ID Persistence
 
 ### Evet, `device_id` DEĞİŞMEZ! ✅

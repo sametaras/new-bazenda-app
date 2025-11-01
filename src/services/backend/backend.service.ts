@@ -74,7 +74,9 @@ class BackendService {
         app_version: appVersion,
       });
 
-      console.log('✅ Device registered:', response.data);
+      if (__DEV__) {
+        console.log('✅ Device registered');
+      }
       return response.data.success;
     } catch (error: any) {
       if (error.response?.status === 404) {
@@ -114,11 +116,12 @@ class BackendService {
     try {
       const deviceId = await this.getDeviceId();
 
-      console.log('📤 Syncing favorites:', {
-        device_id: deviceId,
-        count: favorites.length,
-        favorites: favorites.slice(0, 3), // İlk 3'ü göster
-      });
+      if (__DEV__) {
+        console.log('📤 Syncing favorites:', {
+          count: favorites.length,
+          first_3: favorites.slice(0, 3),
+        });
+      }
 
       const response = await this.apiClient.post('/notifications/sync-favorites', {
         device_id: deviceId,
@@ -128,7 +131,9 @@ class BackendService {
         })),
       });
 
-      console.log('✅ Favorites synced:', response.data);
+      if (__DEV__) {
+        console.log('✅ Favorites synced');
+      }
       return response.data.success;
     } catch (error: any) {
       console.error('❌ Favorites sync failed:', {
@@ -147,11 +152,12 @@ class BackendService {
     try {
       const deviceId = await this.getDeviceId();
 
-      console.log('📤 Adding favorite to backend:', {
-        device_id: deviceId,
-        product_id: productId,
-        current_price: currentPrice,
-      });
+      if (__DEV__) {
+        console.log('📤 Adding favorite to backend:', {
+          product_id: productId,
+          current_price: currentPrice,
+        });
+      }
 
       const response = await this.apiClient.post('/notifications/add-favorite', {
         device_id: deviceId,
@@ -159,7 +165,9 @@ class BackendService {
         current_price: currentPrice,
       });
 
-      console.log('✅ Favorite added to backend:', response.data);
+      if (__DEV__) {
+        console.log('✅ Favorite added to backend');
+      }
       return response.data.success;
     } catch (error: any) {
       console.error('❌ Add favorite to backend failed:', {

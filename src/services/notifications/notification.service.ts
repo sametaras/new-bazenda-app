@@ -64,7 +64,9 @@ class NotificationService {
       // Backend'e kaydet
       await BackendService.registerDevice(token);
 
-      console.log('✅ Notification servisi başlatıldı:', token);
+      if (__DEV__) {
+        console.log('✅ Notification servisi başlatıldı');
+      }
       return token;
     } catch (error) {
       console.error('❌ Notification initialization hatası:', error);

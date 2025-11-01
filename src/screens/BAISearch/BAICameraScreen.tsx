@@ -127,12 +127,7 @@ export default function BAICameraScreen() {
 
         <Text style={styles.title}>BAI Arama</Text>
 
-        <TouchableOpacity
-          style={styles.historyButton}
-          onPress={() => navigation.navigate('BAIHistory' as never)}
-        >
-          <Ionicons name="time" size={28} color={colors.white} />
-        </TouchableOpacity>
+        <View style={{ width: 28 }} />
       </SafeAreaView>
 
       <View style={styles.guideContainer}>

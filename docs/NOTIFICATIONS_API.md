@@ -597,6 +597,12 @@ public function markAllRead()
 
 #### `deleteNotification()` - YENİ
 
+⚠️ **TROUBLESHOOTING:** Eğer mobile'dan 404 hatası alıyorsanız:
+1. Route'un **POST** olarak tanımlandığından emin olun (DELETE değil!)
+2. Namespace doğru: `App\Controllers\NApi\NotificationController`
+3. Controller'da bu metot mevcut olmalı
+4. Test: `curl -X POST https://bazenda.com/api/notifications/delete-notification -d '{"device_id":"test","notification_id":1}'`
+
 ```php
 /**
  * POST /api/notifications/delete-notification

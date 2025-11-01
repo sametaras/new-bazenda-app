@@ -51,7 +51,7 @@ export const useBaiStore = create<BAIStore>()(
             ? BAIService.filterResults(response.results, filters)
             : response.results;
           
-          // 4. Arama geçmişine ekle
+          // 4. Arama geçmişine ekle (devre dışı)
           const searchRecord: SearchHistory = {
             id: Date.now().toString(),
             imageUri,
@@ -61,11 +61,11 @@ export const useBaiStore = create<BAIStore>()(
             filters,
             isBaiSearch: true,
           };
-          
-          get().addToHistory(searchRecord);
-          set({ 
+
+          // get().addToHistory(searchRecord); // Geçmiş devre dışı
+          set({
             currentSearch: searchRecord,
-            isSearching: false 
+            isSearching: false
           });
           
         } catch (error) {
@@ -94,7 +94,7 @@ export const useBaiStore = create<BAIStore>()(
             throw new Error(response.message || 'Arama başarısız oldu');
           }
           
-          // Arama geçmişine ekle
+          // Arama geçmişine ekle (devre dışı)
           const searchRecord: SearchHistory = {
             id: Date.now().toString(),
             imageUri: '', // Ürün aramasında URI yok
@@ -104,11 +104,11 @@ export const useBaiStore = create<BAIStore>()(
             productId,
             isBaiSearch: true,
           };
-          
-          get().addToHistory(searchRecord);
-          set({ 
+
+          // get().addToHistory(searchRecord); // Geçmiş devre dışı
+          set({
             currentSearch: searchRecord,
-            isSearching: false 
+            isSearching: false
           });
           
         } catch (error) {
@@ -166,9 +166,8 @@ export const useBaiStore = create<BAIStore>()(
     {
       name: 'bazenda-bai-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({
-        searchHistory: state.searchHistory,
-      }),
+      // searchHistory artık persist edilmiyor
+      partialize: (state) => ({}),
     }
   )
 );

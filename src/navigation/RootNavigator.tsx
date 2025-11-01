@@ -19,7 +19,6 @@ import HomeScreen from '../screens/Home/HomeScreen';
 import SearchResultsScreen from '../screens/Search/SearchResultsScreen';
 import BAICameraScreen from '../screens/BAISearch/BAICameraScreen';
 import BAIResultsScreen from '../screens/BAISearch/BAIResultsScreen';
-import BAIHistoryScreen from '../screens/BAISearch/BAIHistoryScreen';
 import FavoritesScreen from '../screens/Favorites/FavoritesScreen';
 import NotificationsScreen from '../screens/Notifications/NotificationsScreen';
 
@@ -37,13 +36,12 @@ function HomeStack() {
 
 function BAIStack() {
   return (
-    <Stack.Navigator 
+    <Stack.Navigator
       screenOptions={{ headerShown: false }}
       initialRouteName="BAICamera"
     >
       <Stack.Screen name="BAICamera" component={BAICameraScreen} />
       <Stack.Screen name="BAIResults" component={BAIResultsScreen} />
-      <Stack.Screen name="BAIHistory" component={BAIHistoryScreen} />
     </Stack.Navigator>
   );
 }

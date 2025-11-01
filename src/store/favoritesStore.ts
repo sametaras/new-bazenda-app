@@ -177,19 +177,31 @@ export const useFavorites = create<FavoritesStore>()(
 
       clearFavorites: () => {
         console.log('🗑️ Clearing all favorites...');
+
+        // Önce mevcut favorileri al (backend'den silmek için)
+        const currentFavorites = Object.keys(get().favorites);
+
+        // Local state'i temizle
         set({ favorites: {} });
 
-        // ✅ Backend'e de bildir (tüm favorileri temizle)
-        console.log('📤 Syncing empty favorites array to backend...');
-        backendService.syncFavorites([]).then(success => {
-          if (success) {
-            console.log('✅ Backend favorites cleared successfully');
-          } else {
-            console.warn('⚠️  Backend favorites clear returned false');
-          }
-        }).catch(err => {
-          console.error('❌ Backend sync failed for clearFavorites:', err.response?.data || err.message);
-        });
+        // ✅ Backend'den de teker teker sil
+        console.log('📤 Removing all favorites from backend:', currentFavorites.length);
+
+        if (currentFavorites.length > 0) {
+          // Tüm favorileri backend'den sil
+          Promise.all(
+            currentFavorites.map(productId =>
+              backendService.removeFavoriteFromBackend(productId)
+            )
+          ).then(results => {
+            const successCount = results.filter(r => r).length;
+            console.log(`✅ Backend favorites cleared: ${successCount}/${currentFavorites.length}`);
+          }).catch(err => {
+            console.error('❌ Backend clear failed:', err);
+          });
+        } else {
+          console.log('✅ No favorites to clear from backend');
+        }
       },
 
       getFavoriteCount: () => {

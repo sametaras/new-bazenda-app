@@ -1285,18 +1285,27 @@ class ProductsModel extends Model
     }
 
     /**
-     * Fiyat string'ini temizleyip float döndür
+     * ⚠️ ÖNEMLİ: save_price kullan (price değil!)
+     *
+     * price alanı: "699,99 TL" (string, formatlanmış)
+     * save_price alanı: 699 (integer, gerçek fiyat)
+     *
+     * Fiyat karşılaştırması için save_price kullanılmalı!
      */
     public function getCleanPrice(array $product): float
     {
+        // ✅ save_price kullan (zaten numeric)
+        if (isset($product['save_price']) && $product['save_price'] !== null) {
+            return (float) $product['save_price'];
+        }
+
+        // Fallback: price alanından parse et (eski yöntem)
         if (!isset($product['price'])) {
             return 0.0;
         }
 
-        // "299,99 TL" veya "$299.99" gibi formatları temizle
+        // "699,99 TL" gibi formatları temizle
         $price = preg_replace('/[^0-9.,]/', '', $product['price']);
-
-        // Virgülü noktaya çevir (Türkçe format)
         $price = str_replace(',', '.', $price);
 
         return (float) $price;

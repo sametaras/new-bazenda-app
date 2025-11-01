@@ -52,6 +52,10 @@ function MainTabs() {
   const favoriteCount = useFavorites(state => state.getFavoriteCount());
   const { unreadCount, refreshUnreadCount } = useNotifications();
 
+  // Double tap detection için
+  const lastTapRef = React.useRef<{ [key: string]: number }>({});
+  const DOUBLE_TAP_DELAY = 300; // milliseconds
+
   // Uygulama açıldığında okunmamış bildirim sayısını güncelle
   useEffect(() => {
     refreshUnreadCount();
@@ -78,12 +82,36 @@ function MainTabs() {
       }}
       screenListeners={({ navigation, route }) => ({
         tabPress: (e) => {
+          const now = Date.now();
+          const lastTap = lastTapRef.current[route.name] || 0;
+          const isDoubleTap = now - lastTap < DOUBLE_TAP_DELAY;
+
+          lastTapRef.current[route.name] = now;
+
           // BAI tab'ına basıldığında her zaman kamera ekranına git
           if (route.name === 'BAI') {
             e.preventDefault();
             navigation.navigate('BAI', {
               screen: 'BAICamera',
             });
+            return;
+          }
+
+          // Double tap algılandı ve zaten o tab'daysa scroll to top
+          if (isDoubleTap && navigation.isFocused()) {
+            e.preventDefault();
+
+            // Her screen için scroll-to-top logic
+            if (route.name === 'Home') {
+              navigation.navigate('Home', {
+                screen: 'HomeMain',
+                params: { scrollToTop: now }
+              });
+            } else if (route.name === 'Favorilerim') {
+              navigation.navigate('Favorilerim', { scrollToTop: now });
+            } else if (route.name === 'Bildirimler') {
+              navigation.navigate('Bildirimler', { scrollToTop: now });
+            }
           }
         },
       })}

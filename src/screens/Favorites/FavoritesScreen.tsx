@@ -22,15 +22,33 @@ import { useFavorites } from '../../store/favoritesStore';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import CollectionsAPI from '../../services/api/collections.api';
 
-export default function FavoritesScreen() {
+export default function FavoritesScreen({ route }: any) {
+  const flatListRef = React.useRef<FlatList>(null);
   const { getAllFavorites, getFavoriteCount, clearFavorites, clearPriceChange } = useFavorites();
   const favoriteProducts = getAllFavorites();
   const [loading, setLoading] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [collectionUrl, setCollectionUrl] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   // Fiyat değişikliği olan ürünleri filtrele (Backend cron job tarafından güncellenir)
   const priceChangedProducts = favoriteProducts.filter(f => f.priceChanged);
+
+  // Double tap scroll-to-top
+  React.useEffect(() => {
+    if (route?.params?.scrollToTop) {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [route?.params?.scrollToTop]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Favoriler zaten store'dan geliyor, burada sadece UI refresh için bekleme
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setRefreshing(false);
+  };
 
   const handleCreateCollection = async () => {
     if (getFavoriteCount() === 0) {
@@ -220,6 +238,7 @@ export default function FavoritesScreen() {
         </View>
       ) : (
         <FlatList
+          ref={flatListRef}
           data={favoriteProducts}
           renderItem={renderProduct}
           keyExtractor={(item) => item.product.product_id}
@@ -227,6 +246,8 @@ export default function FavoritesScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={renderHeader()}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
         />
       )}
 

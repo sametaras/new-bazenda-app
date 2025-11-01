@@ -23,7 +23,8 @@ import * as Haptics from 'expo-haptics';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen({ route }: any) {
+  const flatListRef = React.useRef<FlatList>(null);
   const {
     notifications,
     unreadCount,
@@ -42,6 +43,14 @@ export default function NotificationsScreen() {
   useEffect(() => {
     loadNotifications();
   }, []);
+
+  // Double tap scroll-to-top
+  useEffect(() => {
+    if (route?.params?.scrollToTop) {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [route?.params?.scrollToTop]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -256,6 +265,7 @@ export default function NotificationsScreen() {
 
       {/* List */}
       <FlatList
+        ref={flatListRef}
         data={notifications}
         renderItem={renderNotificationItem}
         keyExtractor={(item) => item.id.toString()}

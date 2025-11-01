@@ -58,7 +58,7 @@ const POPULAR_SEARCHES = [
   { id: '25', text: 'kemer', category: 'Aksesuar', popularity: 75 },
 ];
 
-export default function HomeScreen() {
+export default function HomeScreen({ route }: any) {
   const navigation = useNavigation();
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -70,6 +70,7 @@ export default function HomeScreen() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showPopularSearches, setShowPopularSearches] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { toggleFavorite, isFavorite } = useFavorites();
 
@@ -93,6 +94,13 @@ export default function HomeScreen() {
     AnalyticsService.logScreenView('Home');
     loadTrendProducts(1);
   }, []);
+
+  // Double tap scroll-to-top
+  React.useEffect(() => {
+    if (route?.params?.scrollToTop) {
+      scrollToTop();
+    }
+  }, [route?.params?.scrollToTop]);
 
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
@@ -183,6 +191,14 @@ export default function HomeScreen() {
       setTrendPage(nextPage);
       loadTrendProducts(nextPage);
     }
+  };
+
+  const handleRefresh = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setRefreshing(true);
+    setTrendPage(1);
+    await loadTrendProducts(1);
+    setRefreshing(false);
   };
 
   return (
@@ -291,6 +307,8 @@ export default function HomeScreen() {
         contentContainerStyle={styles.trendGrid}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         ListHeaderComponent={
           <>
             {/* Popüler Aramalar Header */}

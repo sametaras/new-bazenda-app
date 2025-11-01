@@ -29,6 +29,7 @@ const LOADING_MESSAGES = [
 ];
 
 export default function SearchResultsScreen() {
+  const flatListRef = React.useRef<FlatList>(null);
   const navigation = useNavigation();
   const route = useRoute();
   const { query, title } = route.params as { query: string; title?: string };
@@ -40,6 +41,7 @@ export default function SearchResultsScreen() {
   const [searchQuery, setSearchQuery] = useState(query);
   const [showFilters, setShowFilters] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Advanced filters from store
   const { filters, getActiveFilterCount, loadFilters } = useFilterStore();
@@ -125,6 +127,13 @@ export default function SearchResultsScreen() {
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await loadProducts(true);
+    setRefreshing(false);
+  };
+
   const applyFilters = (appliedFilters: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     console.log('🔍 Applying filters immediately:', appliedFilters);
@@ -206,6 +215,7 @@ export default function SearchResultsScreen() {
 
       {!loading || products.length > 0 ? (
         <FlatList
+          ref={flatListRef}
           data={products}
           renderItem={({ item }) => (
             <View style={styles.productWrapper}>
@@ -220,6 +230,8 @@ export default function SearchResultsScreen() {
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
           ListFooterComponent={
             loading && products.length > 0 ? (
               <View style={styles.loadingMore}>

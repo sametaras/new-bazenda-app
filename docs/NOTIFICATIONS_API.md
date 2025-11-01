@@ -830,9 +830,19 @@ class CronController extends BaseController
                                     $favorite['product_id']
                                 );
 
+                            // ✅ Response formatını kontrol et (sendBatch array döndürür)
+                            $isSuccess = false;
+                            if (is_array($response)) {
+                                // sendBatch array döndürür, ilk elemanı al
+                                $firstResponse = $response[0] ?? null;
+                                $isSuccess = $firstResponse['success'] ?? false;
+                            } else {
+                                $isSuccess = $response['success'] ?? false;
+                            }
+
                             // Sonucu güncelle
                             $this->pushNotificationModel->update($notificationId, [
-                                'status' => $response['success'] ? 'sent' : 'failed',
+                                'status' => $isSuccess ? 'sent' : 'failed',
                                 'expo_response' => json_encode($response),
                             ]);
 
@@ -847,7 +857,7 @@ class CronController extends BaseController
                                 $response
                             );
 
-                            if ($response['success']) {
+                            if ($isSuccess) {
                                 $stats['notifications_sent']++;
 
                                 // Son bildirim fiyatını güncelle
@@ -1007,6 +1017,54 @@ Sunucunuzda crontab'e ekleyin:
 # VEYA her saat başı
 0 * * * * curl -H "X-Cron-Secret: your-secret-key-here" https://bazenda.com/api/cron/check-prices
 ```
+
+### ⚠️ ÖNEMLI: ExpoPushService Response Format Hatası
+
+**SORUN:** ExpoPushService'in `sendPriceDropNotification()` metodu **array** döndürüyor ama CronController **object** bekliyor!
+
+**HATA:**
+```php
+// ❌ BU HATA VERİR: Undefined array key "success"
+$response = $this->expoPushService->sendPriceDropNotification(...);
+if ($response['success']) { ... }
+```
+
+**NEDEN:**
+- `sendNotification()` → `sendBatch()` çağırır
+- `sendBatch()` → **array** döndürür: `[0 => ['success' => true, ...]]`
+- Ama kod direkt `$response['success']` bekliyor!
+
+**ÇÖZÜM 1: ExpoPushService'i Düzelt (Önerilen)**
+
+Yukarıdaki kod örneklerinde `sendNotification()` metodu zaten düzeltildi:
+```php
+public function sendNotification(...) {
+    $batchResults = $this->sendBatch([...]);
+
+    // ✅ İlk elemanı döndür (tek notification için)
+    return $batchResults[0] ?? ['success' => false, 'error' => 'No response'];
+}
+```
+
+**ÇÖZÜM 2: CronController'da Kontrol Et (Alternatif)**
+
+CronController'daki kodda zaten eklendi:
+```php
+// ✅ Response formatını kontrol et
+$isSuccess = false;
+if (is_array($response)) {
+    $firstResponse = $response[0] ?? null;
+    $isSuccess = $firstResponse['success'] ?? false;
+} else {
+    $isSuccess = $response['success'] ?? false;
+}
+```
+
+**HANGİSİNİ KULLANMALI?**
+- Eğer ExpoPushService'i düzeltebiliyorsanız → **Çözüm 1** (daha temiz)
+- Eğer ExpoPushService başka yerlerden de kullanılıyorsa → **Çözüm 2** (daha güvenli)
+
+---
 
 ### Önemli Değişiklikler (Eski → Yeni)
 

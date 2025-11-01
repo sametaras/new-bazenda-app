@@ -435,10 +435,11 @@ class ExpoPushService
 
     /**
      * Tek bir bildirim gönder
+     * NOT: Tek bir response object döndürür (array değil!)
      */
     public function sendNotification(string $expoPushToken, array $notification)
     {
-        return $this->sendBatch([
+        $batchResults = $this->sendBatch([
             [
                 'to' => $expoPushToken,
                 'sound' => $notification['sound'] ?? 'default',
@@ -449,6 +450,12 @@ class ExpoPushService
                 'channelId' => $notification['channelId'] ?? 'default'
             ]
         ]);
+
+        // Tek notification için ilk elemanı döndür
+        return $batchResults[0] ?? [
+            'success' => false,
+            'error' => 'No response from Expo'
+        ];
     }
 
     /**
